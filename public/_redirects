@@ -1,0 +1,2 @@
+# Overwritten at build when VITE_API_URL is set. Fallback SPA route:
+/*    /index.html  200
