@@ -8,7 +8,10 @@ import { DEFAULT_PROFILE, mergeProfilePrefs } from './profileTheme'
 const KEY = 'thriv-progress'
 
 function defaultQuests(): QuestProgress[] {
-  return QUESTS.map((q) => ({ id: q.id, completed: false, claimed: false }))
+  return [
+    ...QUESTS.map((q) => ({ id: q.id, completed: false, claimed: false })),
+    ...DAILY_QUESTS.map((q) => ({ id: q.id, completed: false, claimed: false })),
+  ]
 }
 
 export function defaultProgress(): PlayerProgress {
@@ -48,22 +51,30 @@ export function defaultProgress(): PlayerProgress {
       largestSingleLoss: 0,
       marginUsed: false,
       liquidationCount: 0,
+      cumulativeRealizedProfit: 0,
+      activitiesPlayed: 0,
     },
     dailyQuestId: DAILY_QUESTS[0].id,
     dailyQuestDate: todayKey(),
     quizzesPassed: [],
+    quizzersCount: 0,
     scenariosCompleted: 0,
     predictionsWon: 0,
     predictionsTotal: 0,
     tabsVisited: [],
     toastQueue: [],
     lastSprintDate: null,
+    lastSizerDate: null,
+    lastPredictDate: null,
     positionSizerUses: 0,
     profile: { ...DEFAULT_PROFILE },
     dailyBonusDate: null,
     weeklyChallengeWeek: null,
     weeklyChallengeId: null,
     weeklyChallengeDone: false,
+    macroTriggerCount: 0,
+    macroTriggerDate: null,
+    lastBriefingDate: null,
   }
   return ensureWeeklyChallenge(base)
 }
@@ -76,10 +87,17 @@ export function loadProgress(): PlayerProgress {
       const merged = {
         ...defaultProgress(),
         ...p,
-        stats: { ...defaultProgress().stats, ...p.stats },
+        stats: {
+          ...defaultProgress().stats,
+          ...p.stats,
+          activitiesPlayed: p.stats?.activitiesPlayed ?? 0,
+        },
         profile: mergeProfilePrefs(p.profile),
       }
-      const knownIds = new Set(QUESTS.map((q) => q.id))
+      const knownIds = new Set([
+        ...QUESTS.map((q) => q.id),
+        ...DAILY_QUESTS.map((q) => q.id),
+      ])
       merged.quests = [
         ...merged.quests.filter((q) => knownIds.has(q.id)),
         ...defaultQuests().filter((q) => !merged.quests.some((x) => x.id === q.id)),

@@ -7,6 +7,7 @@
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     -webkit-user-select: none;
+    overscroll-behavior-y: none;
   }
 
   body {
@@ -14,6 +15,7 @@
     padding-bottom: env(safe-area-inset-bottom);
     user-select: none;
     -webkit-user-select: none;
+    overscroll-behavior-y: none;
   }
 
   input,
@@ -40,11 +42,32 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-thriv-600;
   }
+
+  /* Hide scrollbars on mobile / touch-enabled devices */
+  @media (pointer: coarse) {
+    ::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    * {
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+    }
+  }
 }
 
 @layer utilities {
   .glass {
     @apply border border-white/[0.06] bg-surface-800/75 backdrop-blur-md;
+  }
+
+  .apple-glass {
+    background-color: rgba(0, 0, 0, 0.55) !important;
+    backdrop-filter: blur(28px) !important;
+    -webkit-backdrop-filter: blur(28px) !important;
+    will-change: transform, backdrop-filter;
+    transform: translateZ(0);
   }
 
   .glow-green {
@@ -90,6 +113,10 @@
     animation: toast-out 300ms cubic-bezier(0.4, 0, 1, 1) forwards;
   }
 
+  .toast-swipe-exit {
+    animation: toast-swipe-out 120ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
   @keyframes toast-in {
     from {
       opacity: 0;
@@ -112,12 +139,15 @@
     }
   }
 
-  .chart-live-dot {
-    transition: cx 0.12s linear, cy 0.12s linear;
-  }
-
-  .chart-live-pulse {
-    animation: chart-pulse 1.8s ease-out infinite;
+  @keyframes toast-swipe-out {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-24px) scale(0.96);
+    }
   }
 
   .loss-shake {
@@ -157,15 +187,88 @@
     }
   }
 
-  @keyframes chart-pulse {
-    0%,
-    100% {
-      opacity: 0.35;
-      r: 4;
+  .pulse-rewards {
+    animation: pulse-rewards 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-rewards {
+    0%, 100% {
+      opacity: 1;
     }
     50% {
-      opacity: 0.08;
-      r: 8;
+      opacity: 0.7;
     }
   }
+
+  /* Hardware-Accelerated Premium Mobile Footer Blur (Single-Element Progressive Mask) */
+  .progressive-blur-container {
+    position: fixed;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 62px; /* Exactly 60px visible height above viewport bottom */
+    z-index: 40; /* Placed directly behind MobileNav (z-50) and in front of scroll area */
+    pointer-events: none;
+
+    /* 1. The uniform blur and saturation punch (iOS Frosted Blur) */
+    backdrop-filter: blur(20px) saturate(190%);
+    -webkit-backdrop-filter: blur(20px) saturate(190%);
+
+    /* 2. Seamless theme blending background color (#0a0f14 is rgb(10, 15, 20)) */
+    background: linear-gradient(to top, rgba(10, 15, 20, 1.0) 0%, rgba(10, 15, 20, 0.65) 50%, rgba(10, 15, 20, 0) 100%);
+
+    /* 3. Single-element progressive masking */
+    mask-image: linear-gradient(to top, #000000 0%, rgba(0, 0, 0, 0.85) 50%, rgba(0, 0, 0, 0) 100%);
+    -webkit-mask-image: linear-gradient(to top, #000000 0%, rgba(0, 0, 0, 0.85) 50%, rgba(0, 0, 0, 0) 100%);
+
+    /* 4. Mobile performance optimization triggers */
+    will-change: transform, backdrop-filter;
+    transform: translateZ(0);
+  }
+
+  /* 3D Card Flip Utilities */
+  .perspective-1000 {
+    perspective: 1000px;
+    -webkit-perspective: 1000px;
+  }
+  .transform-style-3d {
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+
+  @keyframes growUp {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none !important;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
 }
+

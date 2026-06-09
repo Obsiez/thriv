@@ -1,20 +1,23 @@
-import { BookOpen, ListOrdered, Newspaper, Sparkles, X } from 'lucide-react'
+import { BookOpen, ListOrdered, Newspaper, Sparkles, X, Gamepad2, CreditCard } from 'lucide-react'
 import type { TabId } from '../types'
 
 interface MoreMenuProps {
   open: boolean
   onClose: () => void
   onTab: (tab: TabId) => void
+  questBadge?: number
 }
 
-const ITEMS: { id: TabId; label: string; icon: typeof Newspaper; desc: string }[] = [
+const ITEMS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }>; desc: string }[] = [
+  { id: 'ledger', label: 'Ledger', icon: CreditCard, desc: 'Virtual cards & limits' },
+  { id: 'quests', label: 'Quests', icon: Gamepad2, desc: 'Missions & rewards' },
   { id: 'activities', label: 'Activities', icon: Sparkles, desc: 'Quizzes & mini-games' },
   { id: 'news', label: 'News', icon: Newspaper, desc: 'Market headlines' },
   { id: 'orders', label: 'Orders', icon: ListOrdered, desc: 'Trade history' },
   { id: 'learn', label: 'Learn', icon: BookOpen, desc: 'Glossary & lessons' },
 ]
 
-export function MoreMenu({ open, onClose, onTab }: MoreMenuProps) {
+export function MoreMenu({ open, onClose, onTab, questBadge = 0 }: MoreMenuProps) {
   if (!open) return null
   return (
     <>
@@ -40,11 +43,16 @@ export function MoreMenu({ open, onClose, onTab }: MoreMenuProps) {
                 onTab(id)
                 onClose()
               }}
-              className="flex flex-col items-start gap-1 rounded-xl border border-white/5 bg-surface-900 p-4 text-left active:bg-surface-700 touch-manipulation min-h-[72px]"
+              className="relative flex flex-col items-start gap-1 rounded-xl border border-white/5 bg-surface-900 p-4 text-left active:bg-surface-700 touch-manipulation min-h-[72px]"
             >
               <Icon className="h-5 w-5 text-thriv-400" />
               <span className="font-medium text-sm">{label}</span>
               <span className="text-[10px] text-slate-500">{desc}</span>
+              {id === 'quests' && questBadge > 0 && (
+                <span className="absolute right-3 top-3 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-bold text-surface-900 pulse-rewards">
+                  {questBadge > 9 ? '9+' : questBadge}
+                </span>
+              )}
             </button>
           ))}
         </div>

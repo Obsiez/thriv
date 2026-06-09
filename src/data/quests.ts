@@ -256,4 +256,22 @@ export const DAILY_QUESTS: QuestDef[] = [
     xpReward: 45,
     icon: 'chart',
   },
+  {
+    id: 'daily-sizer',
+    title: 'Risk Calculator',
+    description: 'Calculate your risk using the Position Sizer today.',
+    hint: 'Activities → Position Sizer.',
+    category: 'daily',
+    xpReward: 50,
+    icon: 'calculator',
+  },
+  {
+    id: 'daily-predict',
+    title: 'Trend forecaster',
+    description: 'Make any price prediction in Price Predictor today.',
+    hint: 'Activities → Price Predictor.',
+    category: 'daily',
+    xpReward: 60,
+    icon: 'activity',
+  },
 ]

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ArrowLeft, Check, GraduationCap, X, XCircle } from 'lucide-react'
 import { ADVANCED_QUIZ, BASICS_QUIZ } from '../data/quizzes'
 import type { QuizQuestion } from '../types'
+import { haptic } from '../lib/haptics'
 
 interface QuizActivityProps {
   quizId: string
@@ -9,6 +10,8 @@ interface QuizActivityProps {
   questionsKey?: 'basics' | 'advanced'
   onBack: () => void
   onComplete: (scorePct: number) => void
+  onCorrectAnswer?: () => void
+  onAnswer?: (correct: boolean) => void
 }
 
 export function QuizActivity({
@@ -16,6 +19,8 @@ export function QuizActivity({
   questionsKey = 'basics',
   onBack,
   onComplete,
+  onCorrectAnswer,
+  onAnswer,
 }: QuizActivityProps) {
   const questions: QuizQuestion[] = questionsKey === 'advanced' ? ADVANCED_QUIZ : BASICS_QUIZ
   const [index, setIndex] = useState(0)
@@ -28,9 +33,19 @@ export function QuizActivity({
   function pick(i: number) {
     if (picked !== null) return
     const correct = i === q.correctIndex
+    haptic(correct ? 'success' : 'alert')
     const newScore = score + (correct ? 1 : 0)
     setPicked(i)
     setScore(newScore)
+
+    if (onAnswer) {
+      onAnswer(correct)
+    }
+
+    if (correct && onCorrectAnswer) {
+      onCorrectAnswer()
+    }
+
     setTimeout(() => {
       if (index + 1 >= questions.length) {
         const pct = (newScore / questions.length) * 100

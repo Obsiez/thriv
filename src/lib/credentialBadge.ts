@@ -22,6 +22,21 @@ export const CREDENTIAL_LADDER: string[] = [
   'level-10',
   'lesson-liquidated',
   'quests-all',
+  
+  // New Progression & Sizing achievements
+  'leverage-master',
+  'diversification-guru',
+  'diamond-hands',
+  'predictor-oracle',
+  'apex-trader',
+  'perfect-score',
+  
+  // Profit milestones (highest honors)
+  'profit-milestone-50k',
+  'profit-milestone-100k',
+  'profit-milestone-200k',
+  'profit-milestone-500k',
+  'profit-milestone-1M',
 ]
 
 export function getActiveCredential(achievementIds: string[]): AchievementDef | null {

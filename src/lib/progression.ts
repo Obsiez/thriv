@@ -1,5 +1,3 @@
-export const XP_PER_LEVEL = 300
-
 export type RankTier = 'associate' | 'analyst' | 'strategist' | 'principal'
 
 export interface LevelInfo {
@@ -10,6 +8,20 @@ export interface LevelInfo {
   tierLabel: string
   nextTitle: string | null
 }
+
+// Cumulative XP thresholds to unlock each level (Level 1 starts at 0 XP)
+export const LEVEL_THRESHOLDS = [
+  0,       // Level 1
+  400,     // Level 2 (requires 400 XP total)
+  1000,    // Level 3 (requires 1,000 XP total)
+  2000,    // Level 4 (requires 2,000 XP total)
+  3500,    // Level 5 (requires 3,500 XP total)
+  5500,    // Level 6 (requires 5,500 XP total)
+  8000,    // Level 7 (requires 8,000 XP total)
+  11000,   // Level 8 (requires 11,000 XP total)
+  14500,   // Level 9 (requires 14,500 XP total)
+  19000,   // Level 10 (requires 19,000 XP total)
+]
 
 const TITLES: { title: string; rankCode: string; tier: RankTier; tierLabel: string }[] = [
   { title: 'Market Associate I', rankCode: 'MA-I', tier: 'associate', tierLabel: 'Associate Track' },
@@ -25,14 +37,28 @@ const TITLES: { title: string; rankCode: string; tier: RankTier; tierLabel: stri
 ]
 
 export function levelFromXp(xp: number): number {
-  return Math.floor(xp / XP_PER_LEVEL) + 1
+  let lvl = 1
+  for (let i = 1; i < LEVEL_THRESHOLDS.length; i++) {
+    if (xp >= LEVEL_THRESHOLDS[i]) {
+      lvl = i + 1
+    } else {
+      break
+    }
+  }
+  return Math.min(10, lvl)
 }
 
 export function xpProgressInLevel(xp: number): { current: number; max: number; pct: number } {
   const level = levelFromXp(xp)
-  const start = (level - 1) * XP_PER_LEVEL
-  const current = xp - start
-  return { current, max: XP_PER_LEVEL, pct: Math.min(100, (current / XP_PER_LEVEL) * 100) }
+  if (level >= 10) {
+    const max = 2000 // Reference max for Level 10 capped display
+    return { current: max, max, pct: 100 }
+  }
+  const currentThreshold = LEVEL_THRESHOLDS[level - 1]
+  const nextThreshold = LEVEL_THRESHOLDS[level]
+  const max = nextThreshold - currentThreshold
+  const current = xp - currentThreshold
+  return { current, max, pct: Math.min(100, (current / max) * 100) }
 }
 
 export function getLevelInfo(level: number): LevelInfo {

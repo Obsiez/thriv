@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowDown, ArrowLeft, ArrowUp, Crosshair, TrendingDown } from 'lucide-react'
 import { formatCurrency } from '../lib/marketEngine'
 import type { Stock } from '../types'
+import { haptic } from '../lib/haptics'
 
 interface PredictorActivityProps {
   stock: Stock
@@ -37,6 +38,7 @@ export function PredictorActivity({ stock, stocks, onBack, onResult }: Predictor
           if (guess) {
             const up = s.price > startPrice
             const won = (guess === 'up' && up) || (guess === 'down' && !up)
+            haptic(won ? 'success' : 'alert')
             onResult(won)
           }
         }

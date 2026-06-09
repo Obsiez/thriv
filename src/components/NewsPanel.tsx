@@ -57,16 +57,21 @@ export function NewsPanel({ news, compact }: NewsPanelProps) {
                   {!compact && (
                     <p className="mt-1 text-sm text-slate-500">{n.summary}</p>
                   )}
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
                     <span>{new Date(n.timestamp).toLocaleTimeString()}</span>
-                    {n.symbols.map((s) => (
-                      <span
-                        key={s}
-                        className="rounded bg-surface-700 px-1.5 py-0.5 font-mono text-thriv-400"
-                      >
-                        {s}
-                      </span>
-                    ))}
+                    <span>·</span>
+                    <span className="font-mono text-slate-400">
+                      {n.symbols.join(', ')}{' '}
+                      {n.sentiment !== 'neutral' && (
+                        <span
+                          className={`font-semibold ${
+                            n.sentiment === 'bullish' ? 'text-emerald-400' : 'text-red-400'
+                          }`}
+                        >
+                          ({n.sentiment === 'bullish' ? '+' : '-'}{(n.impactPct != null ? n.impactPct : 0.35).toFixed(2)}%)
+                        </span>
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>

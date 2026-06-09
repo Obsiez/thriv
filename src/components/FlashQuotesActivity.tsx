@@ -2,11 +2,13 @@ import { useMemo, useState } from 'react'
 import { ArrowLeft, Gauge, Zap } from 'lucide-react'
 import { formatCurrency } from '../lib/marketEngine'
 import type { Stock } from '../types'
+import { haptic } from '../lib/haptics'
 
 interface FlashQuotesActivityProps {
   stocks: Stock[]
   onBack: () => void
   onComplete: (correct: number, total: number) => void
+  onAnswer?: (correct: boolean) => void
 }
 
 const ROUNDS = 8
@@ -18,7 +20,7 @@ function pickPair(stocks: Stock[], round: number): [Stock, Stock] {
   return [a, b]
 }
 
-export function FlashQuotesActivity({ stocks, onBack, onComplete }: FlashQuotesActivityProps) {
+export function FlashQuotesActivity({ stocks, onBack, onComplete, onAnswer }: FlashQuotesActivityProps) {
   const [round, setRound] = useState(0)
   const [score, setScore] = useState(0)
   const [picked, setPicked] = useState<string | null>(null)
@@ -32,6 +34,11 @@ export function FlashQuotesActivity({ stocks, onBack, onComplete }: FlashQuotesA
     if (picked || done) return
     setPicked(symbol)
     const wasCorrect = symbol === higher
+    haptic(wasCorrect ? 'success' : 'alert')
+    
+    if (onAnswer) {
+      onAnswer(wasCorrect)
+    }
     setTimeout(() => {
       setScore((prev) => {
         const nextScore = prev + (wasCorrect ? 1 : 0)

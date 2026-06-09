@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react'
-import { Check, Gift, Lock, Sparkles } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Check, Gift, Lock, Sparkles, ChevronDown, ChevronRight } from 'lucide-react'
 import { getDisplayedCredential } from '../lib/credentialBadge'
 import { DAILY_QUESTS, QUESTS } from '../data/quests'
 import { ACHIEVEMENTS } from '../data/achievements'
@@ -45,6 +45,12 @@ export function QuestHub({
   onSyncQuests,
   onSelectCredential,
 }: QuestHubProps) {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+
+  const toggleCollapsed = (cat: string) => {
+    setCollapsed((prev) => ({ ...prev, [cat]: !prev[cat] }))
+  }
+
   const displayed = getDisplayedCredential(
     progress.achievements,
     progress.displayCredentialId
@@ -105,127 +111,166 @@ export function QuestHub({
       {CATEGORIES.map((cat) => {
         const items = allQuests.filter((q) => q.category === cat)
         if (items.length === 0) return null
+        const isCollapsed = collapsed[cat]
         return (
           <section key={cat}>
-            <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
-              {CATEGORY_LABELS[cat]}
-            </h2>
-            <div className="space-y-2">
-              {items.map((def) => {
-                const qp = getQuestRecord(progress, def.id)
-                const claimable = isQuestClaimable(def.id, ctx)
-                const claimed = qp.claimed
+            <button
+              type="button"
+              onClick={() => toggleCollapsed(cat)}
+              className="flex items-center gap-2 mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500 hover:text-slate-300 transition-colors touch-manipulation focus:outline-none"
+            >
+              {isCollapsed ? (
+                <ChevronRight className="h-3.5 w-3.5 text-slate-500 shrink-0" strokeWidth={2.5} />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5 text-slate-500 shrink-0" strokeWidth={2.5} />
+              )}
+              {CATEGORY_LABELS[cat]} ({items.length})
+            </button>
+            {!isCollapsed && (
+              <div className="space-y-2">
+                {items.map((def) => {
+                  const qp = getQuestRecord(progress, def.id)
+                  const claimable = isQuestClaimable(def.id, ctx)
+                  const claimed = qp.claimed
 
-                return (
-                  <div
-                    key={def.id}
-                    className={`glass rounded-xl border p-3 sm:p-4 ${
-                      claimable ? 'border-thriv-600/35 ring-1 ring-thriv-600/15' : 'border-white/[0.06]'
-                    }`}
-                  >
-                    <div className="flex gap-3">
-                      <IconBadge name={def.icon} variant="quest" size="lg" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <p className="font-semibold text-sm">{def.title}</p>
-                          <span className="font-mono text-[10px] text-thriv-400/90 shrink-0">
-                            +{def.xpReward} XP
-                          </span>
+                  return (
+                    <div
+                      key={def.id}
+                      className={`glass rounded-xl border p-3 sm:p-4 ${
+                        claimable ? 'border-thriv-600/35 ring-1 ring-thriv-600/15' : 'border-white/[0.06]'
+                      }`}
+                    >
+                      <div className="flex gap-3">
+                        <IconBadge name={def.icon} variant="quest" size="lg" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <p className="font-semibold text-sm">{def.title}</p>
+                            <span className="font-mono text-[10px] text-thriv-400/90 shrink-0">
+                              +{def.xpReward} XP
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400 mt-0.5">{def.description}</p>
+                          <p className="text-[10px] text-slate-600 mt-1">{def.hint}</p>
                         </div>
-                        <p className="text-xs text-slate-400 mt-0.5">{def.description}</p>
-                        <p className="text-[10px] text-slate-600 mt-1">{def.hint}</p>
+                      </div>
+                      <div className="mt-3 flex justify-end">
+                        {claimed ? (
+                          <span className="flex items-center gap-1 text-xs text-emerald-400">
+                            <Check className="h-3.5 w-3.5" strokeWidth={1.75} /> Claimed
+                          </span>
+                        ) : claimable ? (
+                          <button
+                            type="button"
+                            onClick={() => onClaim(def.id)}
+                            className="rounded-lg border border-thriv-500/60 bg-thriv-700/80 px-4 py-2 text-xs font-semibold text-white touch-manipulation min-h-[44px] hover:bg-thriv-600/90 active:scale-[0.98] transition-all"
+                          >
+                            Claim +{def.xpReward} XP
+                          </button>
+                        ) : (
+                          <span className="flex items-center gap-1 text-xs text-slate-500">
+                            <Lock className="h-3 w-3" strokeWidth={1.75} /> In progress
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="mt-3 flex justify-end">
-                      {claimed ? (
-                        <span className="flex items-center gap-1 text-xs text-emerald-400">
-                          <Check className="h-3.5 w-3.5" strokeWidth={1.75} /> Claimed
-                        </span>
-                      ) : claimable ? (
-                        <button
-                          type="button"
-                          onClick={() => onClaim(def.id)}
-                          className="rounded-lg border border-thriv-500/60 bg-thriv-700/80 px-4 py-2 text-xs font-semibold text-white touch-manipulation min-h-[44px] hover:bg-thriv-600/90 active:scale-[0.98] transition-all"
-                        >
-                          Claim +{def.xpReward} XP
-                        </button>
-                      ) : (
-                        <span className="flex items-center gap-1 text-xs text-slate-500">
-                          <Lock className="h-3 w-3" strokeWidth={1.75} /> In progress
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            )}
           </section>
         )
       })}
 
-      <section>
-        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="font-display text-base font-semibold tracking-tight">Credentials</h2>
-          <p className="text-[10px] text-slate-500">
-            Tap an unlocked badge to show it on the leaderboard
-          </p>
+      <section className="space-y-6">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between border-b border-white/[0.06] pb-3">
+          <div>
+            <h2 className="font-display text-base font-semibold tracking-tight">Credentials & Achievements</h2>
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              Select an unlocked credential to display it as your leaderboard title.
+            </p>
+          </div>
+          {displayed && (
+            <p className="text-xs text-slate-500 font-mono">
+              Equipped: <span className="text-thriv-400 font-semibold">{displayed.title}</span>
+            </p>
+          )}
         </div>
-        {displayed && (
-          <p className="mb-3 text-xs text-slate-400">
-            Showing: <span className="text-thriv-300 font-medium">{displayed.title}</span>
-          </p>
-        )}
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-          {ACHIEVEMENTS.map((a) => {
-            const unlocked = progress.achievements.includes(a.id)
-            const equipped = unlocked && selectedId === a.id
-            const autoPick =
-              unlocked && !selectedId && displayed?.id === a.id
 
-            if (!unlocked) {
-              return (
-                <div
-                  key={a.id}
-                  className="rounded-xl border border-white/[0.04] bg-surface-900/40 p-3 text-center opacity-45"
-                >
-                  <div className="flex justify-center">
-                    <IconBadge name={a.icon} variant="muted" size="md" />
-                  </div>
-                  <p className="mt-2 text-xs font-semibold">{a.title}</p>
-                  <p className="text-[10px] text-slate-500 line-clamp-2 mt-0.5">{a.description}</p>
-                </div>
-              )
+        <div className="space-y-6">
+          {(['analyst', 'profits', 'execution', 'research', 'lessons'] as const).map((cat) => {
+            const catAchievements = ACHIEVEMENTS.filter((a) => a.category === cat)
+            if (catAchievements.length === 0) return null
+
+            const catLabels: Record<string, string> = {
+              analyst: 'Analyst Milestones',
+              profits: 'Trading Profits (Self-Earned)',
+              execution: 'Execution & Risk Sizing',
+              research: 'Research & Interactive Arena',
+              lessons: 'Tuition & Market Lessons',
             }
 
             return (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() =>
-                  onSelectCredential(equipped ? null : a.id)
-                }
-                className={`rounded-xl border p-3 text-center transition-all touch-manipulation ${
-                  equipped
-                    ? 'border-thriv-500 ring-2 ring-thriv-500/40 bg-thriv-950/40'
-                    : autoPick
-                      ? 'border-thriv-700/50 bg-thriv-950/30'
-                      : 'border-thriv-700/30 bg-thriv-950/25 hover:border-thriv-600/50'
-                }`}
-              >
-                <div className="flex justify-center relative">
-                  <IconBadge name={a.icon} variant="achievement" size="md" />
-                  {(equipped || autoPick) && (
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-thriv-600 text-[8px] font-bold text-white">
-                      {equipped ? '✓' : '★'}
-                    </span>
-                  )}
+              <div key={cat} className="space-y-3">
+                <h3 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                  {catLabels[cat]}
+                </h3>
+
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {catAchievements.map((a) => {
+                    const unlocked = progress.achievements.includes(a.id)
+                    const equipped = unlocked && selectedId === a.id
+                    const autoPick =
+                      unlocked && !selectedId && displayed?.id === a.id
+
+                    if (!unlocked) {
+                      return (
+                        <div
+                          key={a.id}
+                          className="rounded-xl border border-white/[0.04] bg-surface-900/40 p-3 text-center opacity-40 transition-all hover:opacity-50"
+                        >
+                          <div className="flex justify-center">
+                            <IconBadge name={a.icon} variant="muted" size="md" />
+                          </div>
+                          <p className="mt-2 text-xs font-semibold text-slate-300 truncate" title={a.title}>{a.title}</p>
+                          <p className="text-[9px] text-slate-500 line-clamp-2 mt-0.5 leading-normal">{a.description}</p>
+                          <p className="mt-1 text-[8px] font-mono text-slate-600">+{a.xpBonus} XP</p>
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() =>
+                          onSelectCredential(equipped ? null : a.id)
+                        }
+                        className={`rounded-xl border p-3 text-center transition-all touch-manipulation active:scale-[0.98] ${
+                          equipped
+                            ? 'border-thriv-500 bg-thriv-950/45 shadow-lg shadow-thriv-950/20'
+                            : autoPick
+                              ? 'border-thriv-700/50 bg-thriv-950/30'
+                              : 'border-white/[0.06] bg-surface-900 hover:border-thriv-600/35 hover:bg-surface-800/40'
+                        }`}
+                      >
+                        <div className="flex justify-center relative">
+                          <IconBadge name={a.icon} variant="achievement" size="md" />
+                          {(equipped || autoPick) && (
+                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-thriv-600 text-[8px] font-bold text-white shadow-sm">
+                              {equipped ? '✓' : '★'}
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-2 text-xs font-semibold truncate" title={a.title}>{a.title}</p>
+                        <p className="text-[9px] text-slate-400 line-clamp-2 mt-0.5 leading-normal">{a.description}</p>
+                        <p className="mt-1.5 text-[8px] uppercase tracking-wider text-thriv-400/90 font-mono font-medium">
+                          {equipped ? 'Selected' : autoPick ? 'Default' : 'Select'}
+                        </p>
+                      </button>
+                    )
+                  })}
                 </div>
-                <p className="mt-2 text-xs font-semibold">{a.title}</p>
-                <p className="text-[10px] text-slate-500 line-clamp-2 mt-0.5">{a.description}</p>
-                <p className="mt-1.5 text-[9px] uppercase tracking-wider text-thriv-400/90">
-                  {equipped ? 'Selected' : autoPick ? 'Default' : 'Select'}
-                </p>
-              </button>
+              </div>
             )
           })}
         </div>

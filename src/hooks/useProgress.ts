@@ -49,12 +49,108 @@ export function useProgress({
 }: UseProgressOptions) {
   const [progress, setProgress] = useState<PlayerProgress>(() => {
     const base = initial ?? loadProgressForUser(userId, guest)
-    return ensureWeeklyChallenge({ ...base, profile: mergeProfilePrefs(base.profile) })
+    const normalized = {
+      ...base,
+      level: levelFromXp(base.xp ?? 0),
+    }
+    return ensureWeeklyChallenge({ ...normalized, profile: mergeProfilePrefs(normalized.profile) })
   })
   const [celebration, setCelebration] = useState<string | null>(null)
 
+  const getXpMultiplier = useCallback(() => {
+    const peak = progress?.stats?.portfolioPeak ?? 0
+    const activeVal = Math.max(portfolioValue, peak)
+    const deactivated = progress.profile?.deactivatedCards ?? []
+    if (activeVal >= 500000 && !deactivated.includes('apex')) return 1.5
+    if (activeVal >= 250000 && !deactivated.includes('zenith')) return 1.25
+    return 1.0
+  }, [portfolioValue, progress?.stats?.portfolioPeak, progress.profile?.deactivatedCards])
+
+
   useEffect(() => {
-    if (initial) setProgress(initial)
+    if (initial) {
+      setProgress((prev) => {
+        // Deep compare stats
+        const statsKeys = Object.keys(initial.stats) as (keyof typeof initial.stats)[]
+        const statsDiff = statsKeys.some((k) => {
+          const v1 = prev.stats[k]
+          const v2 = initial.stats[k]
+          if (Array.isArray(v1) && Array.isArray(v2)) {
+            return v1.length !== v2.length || v1.some((item, i) => item !== v2[i])
+          }
+          return v1 !== v2
+        })
+
+        const questsDiff =
+          prev.quests.length !== initial.quests.length ||
+          prev.quests.some((q, i) => {
+            const iq = initial.quests[i]
+            return !iq || q.id !== iq.id || q.completed !== iq.completed || q.claimed !== iq.claimed
+          })
+
+        const achievementsDiff =
+          prev.achievements.length !== initial.achievements.length ||
+          prev.achievements.some((a, i) => a !== initial.achievements[i])
+
+        const quizzesPassedDiff =
+          prev.quizzesPassed.length !== initial.quizzesPassed.length ||
+          prev.quizzesPassed.some((q, i) => q !== initial.quizzesPassed[i])
+
+        const tabsVisitedDiff =
+          prev.tabsVisited.length !== initial.tabsVisited.length ||
+          prev.tabsVisited.some((t, i) => t !== initial.tabsVisited[i])
+
+        const profileDiff =
+          (prev.profile.accentId ?? 'teal') !== (initial.profile.accentId ?? 'teal') ||
+          (prev.profile.motto ?? '') !== (initial.profile.motto ?? '') ||
+          (initial.profile.gridCardNo && prev.profile.gridCardNo !== initial.profile.gridCardNo) ||
+          (initial.profile.zenithCardNo && prev.profile.zenithCardNo !== initial.profile.zenithCardNo) ||
+          (initial.profile.apexCardNo && prev.profile.apexCardNo !== initial.profile.apexCardNo) ||
+          (prev.profile.maxLossThreshold ?? 0) !== (initial.profile.maxLossThreshold ?? 0) ||
+          (prev.profile.pushNotificationsEnabled ?? false) !== (initial.profile.pushNotificationsEnabled ?? false)
+
+        const otherDiff =
+          prev.xp !== initial.xp ||
+          prev.level !== initial.level ||
+          prev.streak !== initial.streak ||
+          prev.lastVisitDate !== initial.lastVisitDate ||
+          prev.dailyQuestId !== initial.dailyQuestId ||
+          prev.dailyQuestDate !== initial.dailyQuestDate ||
+          prev.displayCredentialId !== initial.displayCredentialId ||
+          prev.quizzersCount !== initial.quizzersCount ||
+          prev.scenariosCompleted !== initial.scenariosCompleted ||
+          prev.predictionsWon !== initial.predictionsWon ||
+          prev.predictionsTotal !== initial.predictionsTotal ||
+          prev.lastSprintDate !== initial.lastSprintDate ||
+          prev.lastSizerDate !== initial.lastSizerDate ||
+          prev.lastPredictDate !== initial.lastPredictDate ||
+          prev.positionSizerUses !== initial.positionSizerUses ||
+          prev.dailyBonusDate !== initial.dailyBonusDate ||
+          prev.weeklyChallengeWeek !== initial.weeklyChallengeWeek ||
+          prev.weeklyChallengeId !== initial.weeklyChallengeId ||
+          prev.weeklyChallengeDone !== initial.weeklyChallengeDone ||
+          prev.macroTriggerCount !== initial.macroTriggerCount ||
+          prev.macroTriggerDate !== initial.macroTriggerDate
+
+        if (
+          statsDiff ||
+          questsDiff ||
+          achievementsDiff ||
+          quizzesPassedDiff ||
+          tabsVisitedDiff ||
+          profileDiff ||
+          otherDiff
+        ) {
+          console.log('[useProgress] Structurally syncing progress state from initial')
+          const normalized = {
+            ...initial,
+            level: levelFromXp(initial.xp ?? 0),
+          }
+          return ensureWeeklyChallenge({ ...normalized, profile: mergeProfilePrefs(normalized.profile) })
+        }
+        return prev
+      })
+    }
   }, [initial])
 
   useEffect(() => {
@@ -64,33 +160,78 @@ export function useProgress({
   useEffect(() => {
     const today = todayKey()
     setProgress((prev) => {
-      let next = { ...prev }
+      let changed = false
+      
+      let streak = prev.streak
+      let lastVisitDate = prev.lastVisitDate
+      let dailyQuestId = prev.dailyQuestId
+      let dailyQuestDate = prev.dailyQuestDate
+      let quests = prev.quests
+      let resetQuests = false
+
       if (prev.lastVisitDate !== today) {
         const yesterday = new Date()
         yesterday.setDate(yesterday.getDate() - 1)
         const yKey = yesterday.toISOString().slice(0, 10)
-        const streak = prev.lastVisitDate === yKey ? prev.streak + 1 : 1
-        next = {
-          ...next,
-          streak,
-          lastVisitDate: today,
-          dailyQuestId: pickDailyQuest(),
-          dailyQuestDate: today,
-        }
+        streak = prev.lastVisitDate === yKey ? prev.streak + 1 : 1
+        lastVisitDate = today
+        dailyQuestId = pickDailyQuest()
+        dailyQuestDate = today
+        resetQuests = true
+        changed = true
       }
-      if (next.dailyQuestDate !== today) {
-        next.dailyQuestId = pickDailyQuest()
-        next.dailyQuestDate = today
+      if (prev.dailyQuestDate !== today) {
+        dailyQuestId = pickDailyQuest()
+        dailyQuestDate = today
+        resetQuests = true
+        changed = true
       }
-      next.stats.portfolioPeak = Math.max(next.stats.portfolioPeak, portfolioValue)
+      if (resetQuests) {
+        const dailyIds = new Set(DAILY_QUESTS.map((q) => q.id))
+        quests = prev.quests.map((q) =>
+          dailyIds.has(q.id) ? { ...q, completed: false, claimed: false, completedAt: undefined } : q
+        )
+        changed = true
+      }
+
+      const prevPeak = prev.stats.portfolioPeak
+      const newPeak = Math.max(prevPeak, portfolioValue)
+      const peakChanged = newPeak !== prevPeak
+
       const gain = portfolioGainPct(portfolioValue)
-      next.stats.bestProfitPct = Math.max(next.stats.bestProfitPct, gain)
-      next.stats.holdingsCountMax = Math.max(
-        next.stats.holdingsCountMax,
+      const prevBestProfit = prev.stats.bestProfitPct
+      const newBestProfit = Math.max(prevBestProfit, gain)
+      const bestProfitChanged = newBestProfit !== prevBestProfit
+
+      const prevHoldingsCountMax = prev.stats.holdingsCountMax
+      const newHoldingsCountMax = Math.max(
+        prevHoldingsCountMax,
         portfolio.holdings.length
       )
-      next.stats = resetDayBaseline(next.stats, portfolioValue, today)
-      return ensureWeeklyChallenge(next)
+      const holdingsCountMaxChanged = newHoldingsCountMax !== prevHoldingsCountMax
+
+      const baselineStats = resetDayBaseline(prev.stats, portfolioValue, today)
+      const baselineChanged = baselineStats !== prev.stats
+
+      if (changed || peakChanged || bestProfitChanged || holdingsCountMaxChanged || baselineChanged) {
+        const next = {
+          ...prev,
+          streak,
+          lastVisitDate,
+          dailyQuestId,
+          dailyQuestDate,
+          quests,
+          stats: {
+            ...baselineStats,
+            portfolioPeak: newPeak,
+            bestProfitPct: newBestProfit,
+            holdingsCountMax: newHoldingsCountMax,
+          }
+        }
+        return ensureWeeklyChallenge(next)
+      }
+      
+      return prev
     })
   }, [portfolioValue, portfolio.holdings.length])
 
@@ -122,6 +263,35 @@ export function useProgress({
   useEffect(() => {
     syncQuests()
   }, [syncQuests])
+
+  // Synchronize and check quests instantly whenever stats or achievements update
+  useEffect(() => {
+    setProgress((prev) => {
+      const { quests, changed } = syncQuestEntries(prev.quests, {
+        portfolio,
+        stocks,
+        progress: prev,
+        selectedSymbol,
+        portfolioValue,
+      })
+      return changed ? { ...prev, quests } : prev
+    })
+  }, [
+    progress.quizzesPassed,
+    progress.scenariosCompleted,
+    progress.predictionsWon,
+    progress.positionSizerUses,
+    progress.lastSprintDate,
+    progress.lastSizerDate,
+    progress.lastPredictDate,
+    progress.tabsVisited,
+    progress.stats,
+    portfolio.watchlist,
+    portfolio.alerts,
+    portfolio.holdings,
+    portfolioValue,
+    selectedSymbol,
+  ])
 
   const claimQuest = useCallback(
     (questId: string) => {
@@ -259,10 +429,21 @@ export function useProgress({
     }))
   }, [])
 
+  const onRealizedGain = useCallback((gainAmount: number) => {
+    setProgress((prev) => ({
+      ...prev,
+      stats: {
+        ...prev.stats,
+        cumulativeRealizedProfit: (prev.stats.cumulativeRealizedProfit ?? 0) + gainAmount,
+      },
+    }))
+  }, [])
+
   const claimDailyBonus = useCallback(() => {
     setProgress((prev) => {
       if (!dailyBonusAvailable(prev)) return prev
       const xp = prev.xp + DAILY_LOGIN_XP
+      haptic('success')
       setCelebration(`+${DAILY_LOGIN_XP} XP — Daily login`)
       setTimeout(() => setCelebration(null), 2800)
       return {
@@ -285,6 +466,7 @@ export function useProgress({
       })
       if (!done || prev.weeklyChallengeDone) return prev
       const xp = prev.xp + def.xpReward
+      haptic('success')
       setCelebration(`+${def.xpReward} XP — ${def.title}`)
       setTimeout(() => setCelebration(null), 2800)
       return {
@@ -306,10 +488,27 @@ export function useProgress({
   const onQuizPass = useCallback((quizId: string, scorePct: number) => {
     setProgress((prev) => {
       const passed = scorePct >= 80
+      const alreadyPassed = prev.quizzesPassed.includes(quizId)
+      
       const quizzesPassed = passed
-        ? [...new Set([...prev.quizzesPassed, quizId])]
+        ? [...prev.quizzesPassed, quizId]
         : prev.quizzesPassed
-      const xp = passed ? prev.xp + Math.round(scorePct * 0.5) : prev.xp
+        
+      const baseReward = Math.round(scorePct * 0.5)
+      const finalReward = passed 
+        ? (alreadyPassed ? 5 : baseReward)
+        : 0
+        
+      const mult = getXpMultiplier()
+      const boostedReward = Math.round(finalReward * mult)
+
+      if (passed && finalReward > 0) {
+        const boostText = mult > 1 ? ` (${mult}x Card Boost)` : ''
+        setCelebration(`+${boostedReward} XP — Quiz Passed${boostText}`)
+        setTimeout(() => setCelebration(null), 2500)
+      }
+
+      const xp = prev.xp + boostedReward
       let stats = prev.stats
       if (passed) {
         stats = bumpWeekStat(stats, 'quizzesThisWeek', 'quizWeekKey')
@@ -322,6 +521,13 @@ export function useProgress({
         level: levelFromXp(xp),
       }
     })
+  }, [getXpMultiplier])
+
+  const onQuizCorrectAnswer = useCallback(() => {
+    setProgress((prev) => ({
+      ...prev,
+      quizzersCount: (prev.quizzersCount ?? 0) + 1,
+    }))
   }, [])
 
   const onScenarioComplete = useCallback((xp: number) => {
@@ -339,10 +545,27 @@ export function useProgress({
   const onSectorSprintComplete = useCallback((correct: number) => {
     setProgress((prev) => {
       const best = Math.max(prev.stats.sectorSprintScore, correct)
-      const xp = prev.xp + correct * 12
+      const today = todayKey()
+      const isFirstSprintToday = prev.lastSprintDate !== today
+      const improvement = Math.max(0, correct - prev.stats.sectorSprintScore)
+      
+      const xpGain = isFirstSprintToday
+        ? correct * 6
+        : improvement * 6
+        
+      const mult = getXpMultiplier()
+      const boostedXp = Math.round(xpGain * mult)
+
+      if (boostedXp > 0) {
+        const boostText = mult > 1 ? ` (${mult}x Card Boost)` : ''
+        setCelebration(`+${boostedXp} XP — Sector Sprint${boostText}`)
+        setTimeout(() => setCelebration(null), 2500)
+      }
+
+      const xp = prev.xp + boostedXp
       return {
         ...prev,
-        lastSprintDate: todayKey(),
+        lastSprintDate: today,
         stats: bumpWeekStat(
           { ...prev.stats, sectorSprintScore: best },
           'sprintsThisWeek',
@@ -352,7 +575,7 @@ export function useProgress({
         level: levelFromXp(xp),
       }
     })
-  }, [])
+  }, [getXpMultiplier])
 
   const onCompareUsed = useCallback(() => {
     setProgress((prev) => ({
@@ -367,6 +590,7 @@ export function useProgress({
       return {
         ...prev,
         positionSizerUses: uses,
+        lastSizerDate: todayKey(),
         stats: { ...prev.stats, positionSizerUsed: true },
       }
     })
@@ -394,7 +618,20 @@ export function useProgress({
   const onFlashQuotesComplete = useCallback((correct: number) => {
     setProgress((prev) => {
       const best = Math.max(prev.stats.flashQuotesBest ?? 0, correct)
-      const xp = prev.xp + correct * 8
+      const previousBest = prev.stats.flashQuotesBest ?? 0
+      const improvement = Math.max(0, correct - previousBest)
+      
+      const xpGain = improvement * 5
+      const mult = getXpMultiplier()
+      const boostedXp = Math.round(xpGain * mult)
+
+      if (boostedXp > 0) {
+        const boostText = mult > 1 ? ` (${mult}x Card Boost)` : ''
+        setCelebration(`+${boostedXp} XP — Flash Quotes${boostText}`)
+        setTimeout(() => setCelebration(null), 2500)
+      }
+
+      const xp = prev.xp + boostedXp
       return {
         ...prev,
         stats: { ...prev.stats, flashQuotesBest: best },
@@ -402,13 +639,23 @@ export function useProgress({
         level: levelFromXp(xp),
       }
     })
+  }, [getXpMultiplier])
+
+  const onActivityAnswer = useCallback((_correct?: boolean) => {
+    setProgress((prev) => ({
+      ...prev,
+      stats: {
+        ...prev.stats,
+        activitiesPlayed: (prev.stats.activitiesPlayed ?? 0) + 1,
+      },
+    }))
   }, [])
 
   const onPrediction = useCallback((won: boolean) => {
     setProgress((prev) => {
       const predictionsWon = prev.predictionsWon + (won ? 1 : 0)
       const predictionsTotal = prev.predictionsTotal + 1
-      const bonus = won ? 15 : 5
+      const bonus = won ? 10 : 2
       const xp = prev.xp + bonus
       let stats = prev.stats
       if (won) {
@@ -418,7 +665,11 @@ export function useProgress({
         ...prev,
         predictionsWon,
         predictionsTotal,
-        stats,
+        lastPredictDate: todayKey(),
+        stats: {
+          ...stats,
+          activitiesPlayed: (stats.activitiesPlayed ?? 0) + 1,
+        },
         xp,
         level: levelFromXp(xp),
       }
@@ -430,6 +681,21 @@ export function useProgress({
       const unlock: string[] = []
       const completed = countCompletedQuests(prev)
       const gain = portfolioGainPct(portfolioValue)
+
+      const activeSectorsCount = new Set(
+        portfolio.holdings
+          .map((h) => stocks.find((s) => s.symbol === h.symbol)?.sector)
+          .filter(Boolean)
+      ).size
+
+      const hasLargePosition = portfolio.holdings.some((h) => {
+        const s = stocks.find((x) => x.symbol === h.symbol)
+        return s ? h.quantity * s.price >= 50000 : false
+      })
+
+      const totalVolume = portfolio.orders
+        .filter((o) => o.status === 'filled')
+        .reduce((sum, o) => sum + o.quantity * (o.fillPrice ?? 0), 0)
 
       const checks: [string, boolean][] = [
         ['level-5', prev.level >= 5],
@@ -455,13 +721,40 @@ export function useProgress({
         ],
         ['lesson-margin', prev.stats.marginUsed === true],
         ['lesson-panic-sell', (prev.stats.largestSingleLoss ?? 0) >= 2000],
+
+        // New trading earnings milestones
+        ['profit-milestone-50k', (prev.stats.cumulativeRealizedProfit ?? 0) >= 50000],
+        ['profit-milestone-100k', (prev.stats.cumulativeRealizedProfit ?? 0) >= 100000],
+        ['profit-milestone-200k', (prev.stats.cumulativeRealizedProfit ?? 0) >= 200000],
+        ['profit-milestone-500k', (prev.stats.cumulativeRealizedProfit ?? 0) >= 500000],
+        ['profit-milestone-1M', (prev.stats.cumulativeRealizedProfit ?? 0) >= 1000000],
+
+        // New progression based achievements
+        ['leverage-master', (portfolio.marginLoan ?? 0) >= 100000],
+        ['diversification-guru', activeSectorsCount === 7],
+        ['diamond-hands', hasLargePosition],
+        ['predictor-oracle', prev.predictionsWon >= 10],
+        ['perfect-score', (prev.stats.flashQuotesBest ?? 0) >= 10],
+        ['apex-trader', totalVolume >= 1000000],
       ]
 
       for (const [id, ok] of checks) {
         if (ok && !prev.achievements.includes(id)) unlock.push(id)
       }
 
-      if (unlock.length === 0) return prev
+      if (unlock.length === 0) {
+        if (activeSectorsCount !== prev.stats.sectorsHeld) {
+          return {
+            ...prev,
+            stats: {
+              ...prev.stats,
+              sectorsHeld: activeSectorsCount,
+            },
+          }
+        }
+        return prev
+      }
+
       haptic('success')
       let xp = prev.xp
       for (const id of unlock) {
@@ -488,9 +781,13 @@ export function useProgress({
         ),
         xp,
         level: levelFromXp(xp),
+        stats: {
+          ...prev.stats,
+          sectorsHeld: activeSectorsCount,
+        },
       }
     })
-  }, [portfolioValue])
+  }, [portfolio, stocks, portfolioValue])
 
   useEffect(() => {
     checkAchievements()
@@ -501,6 +798,19 @@ export function useProgress({
     progress.quests,
     progress.level,
     portfolioValue,
+    progress.stats.sectorSprintScore,
+    progress.positionSizerUses,
+    progress.stats.chartRangesUsed,
+    progress.stats.flashQuotesBest,
+    progress.stats.largestSingleLoss,
+    progress.stats.liquidationCount,
+    progress.stats.portfolioPeak,
+    progress.stats.marginUsed,
+    progress.stats.cumulativeRealizedProfit,
+    progress.predictionsWon,
+    portfolio.marginLoan,
+    portfolio.holdings,
+    portfolio.orders,
     checkAchievements,
   ])
 
@@ -535,6 +845,8 @@ export function useProgress({
     onTrade,
     onWatchlistAdd,
     onQuizPass,
+    onQuizCorrectAnswer,
+    onActivityAnswer,
     onScenarioComplete,
     onPrediction,
     onSectorSprintComplete,
@@ -545,6 +857,7 @@ export function useProgress({
     claimDailyBonus,
     claimWeeklyReward,
     onRealizedLoss,
+    onRealizedGain,
     onMarginBorrow,
     onLiquidation,
     reset,

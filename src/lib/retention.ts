@@ -31,6 +31,12 @@ export function ensureWeeklyChallenge(progress: PlayerProgress): PlayerProgress 
       ...progress.stats,
       tradesThisWeek: 0,
       weekTradeKey: wk,
+      quizzesThisWeek: 0,
+      quizWeekKey: wk,
+      sprintsThisWeek: 0,
+      sprintWeekKey: wk,
+      predictorWinsThisWeek: 0,
+      predictorWeekKey: wk,
     },
   }
 }

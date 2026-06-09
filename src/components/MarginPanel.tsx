@@ -1,10 +1,11 @@
 import { AlertTriangle, Landmark } from 'lucide-react'
 import {
   MARGIN_MAINTENANCE,
-  MARGIN_MAX_RATIO,
   buyingPower,
   estimateLiquidationPrice,
   maxBorrowAllowed,
+  getMarginMaxRatio,
+  grossEquity,
 } from '../lib/margin'
 import { formatCurrency } from '../lib/marketEngine'
 import type { Holding, Stock } from '../types'
@@ -15,16 +16,21 @@ interface MarginPanelProps {
   holdings: Holding[]
   stocks: Stock[]
   symbol?: string
+  portfolioPeak?: number
+  deactivatedCards?: string[]
 }
 
-export function MarginPanel({ cash, marginLoan, holdings, stocks, symbol }: MarginPanelProps) {
+export function MarginPanel({ cash, marginLoan, holdings, stocks, symbol, portfolioPeak, deactivatedCards = [] }: MarginPanelProps) {
   const loan = marginLoan ?? 0
-  const credit = maxBorrowAllowed(cash, holdings, stocks, loan)
-  const power = buyingPower(cash, holdings, stocks, loan)
+  const credit = maxBorrowAllowed(cash, holdings, stocks, loan, portfolioPeak, deactivatedCards)
+  const power = buyingPower(cash, holdings, stocks, loan, portfolioPeak, deactivatedCards)
   const liq =
     symbol && loan > 0
       ? estimateLiquidationPrice(symbol, cash, holdings, stocks, loan)
       : null
+
+  const net = grossEquity(cash, holdings, stocks) - loan
+  const ratio = getMarginMaxRatio(net, portfolioPeak, deactivatedCards)
 
   return (
     <div className="rounded-lg border border-indigo-500/20 bg-indigo-950/15 p-3 space-y-2">
@@ -39,9 +45,10 @@ export function MarginPanel({ cash, marginLoan, holdings, stocks, symbol }: Marg
         <Stat label="Margin credit" value={formatCurrency(credit)} />
       </div>
       <p className="text-[10px] text-slate-600 leading-relaxed">
-        Borrow up to {(MARGIN_MAX_RATIO * 100).toFixed(0)}% of portfolio value. Maintenance margin{' '}
+        Borrow up to {(ratio * 100).toFixed(0)}% of portfolio value. Maintenance margin{' '}
         {(MARGIN_MAINTENANCE * 100).toFixed(0)}% — auto-liquidation if equity falls too low.
       </p>
+
       {liq != null && symbol && (
         <p className="flex items-start gap-2 text-[10px] text-amber-400/90 rounded-md border border-amber-500/20 bg-amber-950/20 px-2 py-1.5">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" strokeWidth={1.75} />

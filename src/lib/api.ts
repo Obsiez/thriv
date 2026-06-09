@@ -44,7 +44,7 @@ function formatApiError(status: number, data: unknown): string {
   if (msg) return msg
   if (status === 405) {
     return usesSameOriginApi() || import.meta.env.PROD
-      ? 'Sign-in blocked (405). Redeploy with VITE_API_URL set on Netlify so /api routes proxy to your backend.'
+      ? 'Sign-in is currently unavailable (405). Please contact support or try again later.'
       : 'Sign-in blocked (405). API URL may be wrong — set VITE_API_URL and redeploy, or use thriv-config.json apiUrl.'
   }
   return `Request failed (${status}).`
@@ -59,7 +59,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!isApiConfigured()) {
     throw new Error(
-      'Sign-in server is not configured. Set VITE_API_URL when building, or add your API URL to public/thriv-config.json (apiUrl).'
+      import.meta.env.PROD
+        ? 'Account service is not configured. Please contact the administrator or try guest mode.'
+        : 'Sign-in server is not configured. Set VITE_API_URL when building, or add your API URL to public/thriv-config.json (apiUrl).'
     )
   }
 
@@ -77,7 +79,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new Error(
       isApiConfigured()
         ? 'Cannot reach the Thriv API. Check your connection and that the API is running.'
-        : 'Cannot reach the Thriv API. Set VITE_API_URL (build) or thriv-config.json (apiUrl).'
+        : (import.meta.env.PROD
+            ? 'Cannot reach the Thriv API. Please verify your connection or try again later.'
+            : 'Cannot reach the Thriv API. Set VITE_API_URL (build) or thriv-config.json (apiUrl).')
     )
   }
   const data = await res.json().catch(() => ({}))
@@ -109,13 +113,17 @@ export function getApiStatusMessage(): string {
   }
   if (!isApiConfigured()) {
     return import.meta.env.PROD
-      ? 'Account server URL is missing. In Netlify: Site settings → Environment variables → add VITE_API_URL to your Railway/Render API, then redeploy.'
+      ? 'Account server is not configured. Please contact the administrator or try guest mode.'
       : 'Start the API with npm run dev:server, or run npm run dev:all. Guest mode works without the API.'
   }
   if (usesSameOriginApi()) {
-    return 'Cannot reach the account server through /api proxy. Confirm VITE_API_URL points to your live API and redeploy the frontend.'
+    return import.meta.env.PROD
+      ? 'Cannot reach the account server. Please verify your connection or try again later.'
+      : 'Cannot reach the account server through /api proxy. Confirm VITE_API_URL points to your live API and redeploy the frontend.'
   }
-  return 'Cannot reach the account server. Check that your API is running and CORS allows this site.'
+  return import.meta.env.PROD
+    ? 'Cannot reach the account server. Please verify your connection or try again later.'
+    : 'Cannot reach the account server. Check that your API is running and CORS allows this site.'
 }
 
 export async function register(

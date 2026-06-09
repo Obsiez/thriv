@@ -90,10 +90,13 @@ export type TabId =
   | 'news'
   | 'orders'
   | 'learn'
+  | 'ledger'
+  | 'watchlist-tracker'
 
 export interface GlossaryTerm {
   term: string
   definition: string
+  category?: string
 }
 
 export type QuestCategory = 'tutorial' | 'trading' | 'learning' | 'daily' | 'challenge'
@@ -118,12 +121,15 @@ export interface QuestProgress {
   claimed: boolean
 }
 
+export type AchievementCategory = 'analyst' | 'profits' | 'execution' | 'research' | 'lessons'
+
 export interface AchievementDef {
   id: string
   title: string
   description: string
   icon: IconName
   xpBonus: number
+  category: AchievementCategory
 }
 
 export interface PlayerProgress {
@@ -139,18 +145,24 @@ export interface PlayerProgress {
   dailyQuestId: string | null
   dailyQuestDate: string | null
   quizzesPassed: string[]
+  quizzersCount: number
   scenariosCompleted: number
   predictionsWon: number
   predictionsTotal: number
   tabsVisited: string[]
   toastQueue: string[]
   lastSprintDate: string | null
+  lastSizerDate?: string | null
+  lastPredictDate?: string | null
   positionSizerUses: number
   profile: ProfilePrefs
   dailyBonusDate: string | null
   weeklyChallengeWeek: string | null
   weeklyChallengeId: string | null
   weeklyChallengeDone: boolean
+  macroTriggerCount?: number
+  macroTriggerDate?: string | null
+  lastBriefingDate?: string | null
 }
 
 export interface PlayerStats {
@@ -181,6 +193,8 @@ export interface PlayerStats {
   largestSingleLoss: number
   marginUsed: boolean
   liquidationCount: number
+  cumulativeRealizedProfit?: number
+  activitiesPlayed: number
 }
 
 export interface QuizQuestion {

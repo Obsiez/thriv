@@ -6,6 +6,17 @@ export const MARGIN_MAX_RATIO = 0.5
 /** Liquidate when net equity falls below loan × this factor. */
 export const MARGIN_MAINTENANCE = 1.25
 
+export function getMarginMaxRatio(netEquityVal: number, portfolioPeak = 0, deactivatedCards: string[] = []): number {
+  const activeVal = Math.max(netEquityVal, portfolioPeak)
+  if (activeVal >= 500000 && !deactivatedCards.includes('apex')) {
+    return 0.70 // APEX: 3.33x leverage (Cap = 70% of gross)
+  } else if (activeVal >= 250000 && !deactivatedCards.includes('zenith')) {
+    return 0.60 // ZENITH: 2.5x leverage (Cap = 60% of gross)
+  } else {
+    return 0.50 // GRID: 2x leverage (Cap = 50% of gross)
+  }
+}
+
 function finite(n: number): number {
   return Number.isFinite(n) ? n : 0
 }
@@ -36,20 +47,27 @@ export function maxBorrowAllowed(
   cash: number,
   holdings: Holding[],
   stocks: Stock[],
-  marginLoan: number
+  marginLoan: number,
+  portfolioPeak = 0,
+  deactivatedCards: string[] = []
 ): number {
   const gross = grossEquity(cash, holdings, stocks)
-  const cap = gross * MARGIN_MAX_RATIO
+  const net = gross - marginLoan
+  const ratio = getMarginMaxRatio(net, portfolioPeak, deactivatedCards)
+  const cap = gross * ratio
   return Math.max(0, cap - marginLoan)
 }
+
 
 export function buyingPower(
   cash: number,
   holdings: Holding[],
   stocks: Stock[],
-  marginLoan: number
+  marginLoan: number,
+  portfolioPeak = 0,
+  deactivatedCards: string[] = []
 ): number {
-  return cash + maxBorrowAllowed(cash, holdings, stocks, marginLoan)
+  return cash + maxBorrowAllowed(cash, holdings, stocks, marginLoan, portfolioPeak, deactivatedCards)
 }
 
 export function shouldLiquidate(

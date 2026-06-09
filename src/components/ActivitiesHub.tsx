@@ -6,7 +6,10 @@ import {
   GitCompare,
   Grid3x3,
   LineChart,
+  Shield,
   Swords,
+  Target,
+  AlertTriangle,
   Zap,
 } from 'lucide-react'
 import { FlashQuotesActivity } from './FlashQuotesActivity'
@@ -16,6 +19,10 @@ import { PredictorActivity } from './PredictorActivity'
 import { SectorSprintActivity } from './SectorSprintActivity'
 import { StockCompareTool } from './StockCompareTool'
 import { PositionSizerTool } from './PositionSizerTool'
+import { OrderBookCombatActivity } from './OrderBookCombatActivity'
+import { BidAskSniperActivity } from './BidAskSniperActivity'
+import { MarginCallSurvivorActivity } from './MarginCallSurvivorActivity'
+import { OptionsExpiryActivity } from './OptionsExpiryActivity'
 import type { Stock } from '../types'
 
 type ActivityId =
@@ -28,6 +35,10 @@ type ActivityId =
   | 'compare'
   | 'sizer'
   | 'flash-quotes'
+  | 'combat'
+  | 'bid-ask-sniper'
+  | 'margin-call'
+  | 'options-expiry'
 
 interface ActivitiesHubProps {
   stocks: Stock[]
@@ -40,6 +51,8 @@ interface ActivitiesHubProps {
   onCompareUsed: () => void
   onPositionSizerUsed: () => void
   onFlashQuotesComplete: (correct: number, total: number) => void
+  onQuizCorrectAnswer?: () => void
+  onActivityAnswer: (correct: boolean) => void
 }
 
 export function ActivitiesHub({
@@ -53,6 +66,8 @@ export function ActivitiesHub({
   onCompareUsed,
   onPositionSizerUsed,
   onFlashQuotesComplete,
+  onQuizCorrectAnswer,
+  onActivityAnswer,
 }: ActivitiesHubProps) {
   const [view, setView] = useState<ActivityId>('menu')
   const stock = stocks.find((s) => s.symbol === selectedSymbol) ?? stocks[0]
@@ -63,6 +78,8 @@ export function ActivitiesHub({
         quizId="basics"
         title="Market Basics Quiz"
         onBack={() => setView('menu')}
+        onCorrectAnswer={onQuizCorrectAnswer}
+        onAnswer={onActivityAnswer}
         onComplete={(pct) => {
           onQuizPass('basics', pct)
           setView('menu')
@@ -78,6 +95,8 @@ export function ActivitiesHub({
         title="Advanced Quiz"
         questionsKey="advanced"
         onBack={() => setView('menu')}
+        onCorrectAnswer={onQuizCorrectAnswer}
+        onAnswer={onActivityAnswer}
         onComplete={(pct) => {
           onQuizPass('advanced', pct)
           if (pct >= 80) onQuizPass(`daily-${Date.now()}`, pct)
@@ -91,6 +110,7 @@ export function ActivitiesHub({
     return (
       <ScenarioActivity
         onBack={() => setView('menu')}
+        onAnswer={onActivityAnswer}
         onComplete={onScenarioComplete}
       />
     )
@@ -112,6 +132,7 @@ export function ActivitiesHub({
       <SectorSprintActivity
         stocks={stocks}
         onBack={() => setView('menu')}
+        onAnswer={onActivityAnswer}
         onComplete={(c) => {
           onSectorSprintComplete(c)
           setView('menu')
@@ -147,8 +168,59 @@ export function ActivitiesHub({
       <FlashQuotesActivity
         stocks={stocks}
         onBack={() => setView('menu')}
+        onAnswer={onActivityAnswer}
         onComplete={(correct, total) => {
           onFlashQuotesComplete(correct, total)
+          setView('menu')
+        }}
+      />
+    )
+  }
+
+  if (view === 'combat') {
+    return (
+      <OrderBookCombatActivity
+        onBack={() => setView('menu')}
+        onComplete={(xp) => {
+          onScenarioComplete(xp)
+          setView('menu')
+        }}
+      />
+    )
+  }
+
+  if (view === 'bid-ask-sniper') {
+    return (
+      <BidAskSniperActivity
+        onBack={() => setView('menu')}
+        onAnswer={onActivityAnswer}
+        onComplete={(xp) => {
+          onScenarioComplete(xp)
+          setView('menu')
+        }}
+      />
+    )
+  }
+
+  if (view === 'margin-call') {
+    return (
+      <MarginCallSurvivorActivity
+        onBack={() => setView('menu')}
+        onComplete={(xp) => {
+          onScenarioComplete(xp)
+          setView('menu')
+        }}
+      />
+    )
+  }
+
+  if (view === 'options-expiry') {
+    return (
+      <OptionsExpiryActivity
+        onBack={() => setView('menu')}
+        onAnswer={onActivityAnswer}
+        onComplete={(xp) => {
+          onScenarioComplete(xp)
           setView('menu')
         }}
       />
@@ -203,6 +275,38 @@ export function ActivitiesHub({
       icon: Zap,
       xp: '8 XP per correct',
       color: 'border-amber-500/25',
+    },
+    {
+      id: 'combat' as const,
+      title: 'Order Book Combat',
+      desc: '3 waves · defend $99.10 support',
+      icon: Shield,
+      xp: '80 XP · all waves',
+      color: 'border-thriv-600/25',
+    },
+    {
+      id: 'bid-ask-sniper' as const,
+      title: 'Bid-Ask Sniper',
+      desc: '10 rounds · widening spreads',
+      icon: Target,
+      xp: '5 XP per correct · 50 max',
+      color: 'border-violet-600/25',
+    },
+    {
+      id: 'margin-call' as const,
+      title: 'Margin Call Survivor',
+      desc: 'Survive 30s of 2× leverage',
+      icon: AlertTriangle,
+      xp: '50 XP survive · 20 XP partial',
+      color: 'border-orange-600/25',
+    },
+    {
+      id: 'options-expiry' as const,
+      title: 'Options Expiry',
+      desc: '8 rounds · ITM or OTM?',
+      icon: Zap,
+      xp: '8 XP per correct · 64 max',
+      color: 'border-indigo-600/25',
     },
     {
       id: 'compare' as const,

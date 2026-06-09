@@ -74,7 +74,7 @@ export function runMidnightMarketRoll(stock: Stock): StockSplitResult {
 }
 
 /** Discrete tick moves — smaller drift; rare spikes; soft mean-reversion on large day moves. */
-export function tickPrice(stock: Stock): Stock {
+export function tickPrice(stock: Stock, multiplier = 1.0): Stock {
   const dayPct =
     stock.previousClose > 0
       ? ((stock.price - stock.previousClose) / stock.previousClose) * 100
@@ -84,7 +84,7 @@ export function tickPrice(stock: Stock): Stock {
   if (dayPct > 5) bias = 0.57
   else if (dayPct < -5) bias = 0.43
 
-  const tickSize = stock.price * (0.0004 + Math.random() * 0.0012)
+  const tickSize = stock.price * (0.0004 + Math.random() * 0.0012) * multiplier
   const direction = Math.random() > bias ? 1 : -1
   const roll = Math.random()
   let jump: number

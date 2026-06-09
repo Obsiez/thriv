@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { AlertCircle, Award, TrendingDown, Zap } from 'lucide-react'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { AlertCircle, Award, TrendingDown, Zap, X } from 'lucide-react'
 
 export type FeedbackTone = 'win' | 'loss' | 'neutral' | 'achievement'
 
@@ -12,30 +12,96 @@ interface FeedbackToastProps {
   message: FeedbackMessage | null
 }
 
-type Phase = 'hidden' | 'enter' | 'visible' | 'exit'
+type Phase = 'hidden' | 'enter' | 'visible' | 'exit' | 'swipe-exit'
 
 export function FeedbackToast({ message }: FeedbackToastProps) {
   const [display, setDisplay] = useState<FeedbackMessage | null>(null)
   const [phase, setPhase] = useState<Phase>('hidden')
 
+  const enterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const dismissToast = useCallback((isSwipe = false) => {
+    if (phase !== 'visible' && phase !== 'enter') return
+
+    // Clear auto-dismiss timers
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current)
+    if (doneTimerRef.current) clearTimeout(doneTimerRef.current)
+
+    if (isSwipe) {
+      setPhase('swipe-exit')
+      doneTimerRef.current = setTimeout(() => {
+        setDisplay(null)
+        setPhase('hidden')
+      }, 120) // 120ms matches the swipe-exit transition duration
+    } else {
+      setPhase('exit')
+      doneTimerRef.current = setTimeout(() => {
+        setDisplay(null)
+        setPhase('hidden')
+      }, 300) // 300ms matches the exit transition duration
+    }
+  }, [phase])
+
   useEffect(() => {
     if (!message) return
 
+    // Clear any active timers
+    if (enterTimerRef.current) clearTimeout(enterTimerRef.current)
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current)
+    if (doneTimerRef.current) clearTimeout(doneTimerRef.current)
+
     setDisplay(message)
     setPhase('enter')
-    const enterDone = setTimeout(() => setPhase('visible'), 30)
-    const hold = setTimeout(() => setPhase('exit'), message.tone === 'loss' ? 3400 : 2600)
-    const done = setTimeout(() => {
+    
+    enterTimerRef.current = setTimeout(() => setPhase('visible'), 30)
+
+    const holdDuration = message.tone === 'loss' ? 3400 : 2600
+    const doneDuration = message.tone === 'loss' ? 3760 : 2920
+
+    holdTimerRef.current = setTimeout(() => {
+      setPhase('exit')
+    }, holdDuration)
+
+    doneTimerRef.current = setTimeout(() => {
       setDisplay(null)
       setPhase('hidden')
-    }, message.tone === 'loss' ? 3760 : 2920)
+    }, doneDuration)
 
     return () => {
-      clearTimeout(enterDone)
-      clearTimeout(hold)
-      clearTimeout(done)
+      if (enterTimerRef.current) clearTimeout(enterTimerRef.current)
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current)
+      if (doneTimerRef.current) clearTimeout(doneTimerRef.current)
     }
   }, [message])
+
+  // Swipe-to-dismiss support for mobile
+  const touchStartY = useRef<number | null>(null)
+  const touchEndY = useRef<number | null>(null)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY
+    touchEndY.current = e.touches[0].clientY
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndY.current = e.touches[0].clientY
+    if (e.cancelable) {
+      e.preventDefault()
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (touchStartY.current === null || touchEndY.current === null) return
+    const diffY = touchStartY.current - touchEndY.current
+    // Swipe up threshold: 50px
+    if (diffY > 50) {
+      dismissToast(true)
+    }
+    touchStartY.current = null
+    touchEndY.current = null
+  }
 
   if (!display || phase === 'hidden') return null
 
@@ -77,11 +143,15 @@ export function FeedbackToast({ message }: FeedbackToastProps) {
       aria-live={display.tone === 'loss' ? 'assertive' : 'polite'}
     >
       <div
-        className={`toast-banner flex w-full max-w-sm items-center gap-3 rounded-lg border px-4 py-3 shadow-xl backdrop-blur-md ${s.border} ${s.bg} ${
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ touchAction: 'none' }}
+        className={`toast-banner pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-lg border px-4 py-3 shadow-xl backdrop-blur-md ${s.border} ${s.bg} ${
           phase === 'enter' ? 'toast-enter' : ''
-        } ${phase === 'visible' ? 'toast-visible' : ''} ${phase === 'exit' ? 'toast-exit' : ''} ${
-          display.tone === 'loss' ? 'loss-shake' : ''
-        }`}
+        } ${phase === 'visible' ? 'toast-visible' : ''} ${
+          phase === 'swipe-exit' ? 'toast-swipe-exit' : phase === 'exit' ? 'toast-exit' : ''
+        } ${display.tone === 'loss' ? 'loss-shake' : ''}`}
       >
         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${s.iconBox}`}>
           <Icon className="h-4 w-4" strokeWidth={1.75} />
@@ -89,6 +159,14 @@ export function FeedbackToast({ message }: FeedbackToastProps) {
         <p className="min-w-0 flex-1 font-display text-sm font-medium leading-snug text-slate-100">
           {display.text}
         </p>
+        <button
+          type="button"
+          onClick={() => dismissToast(false)}
+          className="ml-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 hover:text-slate-200 hover:bg-white/[0.06] transition-colors focus:outline-none touch-manipulation cursor-pointer"
+          aria-label="Close notification"
+        >
+          <X className="h-4 w-4" strokeWidth={2} />
+        </button>
       </div>
     </div>
   )

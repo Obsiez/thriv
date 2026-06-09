@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { clearStaticChartCache } from '../lib/chartSeries'
-import type { Stock } from '../types'
+import type { Stock, Order } from '../types'
 import { changePercent, formatCurrency, formatPercent } from '../lib/marketEngine'
 import {
   build1DSeries,
@@ -14,9 +14,11 @@ import { TradingChart } from './TradingChart'
 interface PriceChartProps {
   stock: Stock
   onRangeView?: (range: ChartRange) => void
+  orders?: Order[]
+  showVolume?: boolean
 }
 
-export function PriceChart({ stock, onRangeView }: PriceChartProps) {
+export function PriceChart({ stock, onRangeView, orders = [], showVolume }: PriceChartProps) {
   const [range, setRange] = useState<ChartRange>('1D')
   const anchorRef = useRef(stock.price)
 
@@ -101,6 +103,8 @@ export function PriceChart({ stock, onRangeView }: PriceChartProps) {
           color={color}
           range={range}
           liveTail={range === '1D'}
+          orders={orders}
+          showVolume={showVolume}
           className="h-[200px] min-h-[200px] max-h-[240px] sm:h-[280px] sm:max-h-none md:h-[300px]"
         />
       </div>

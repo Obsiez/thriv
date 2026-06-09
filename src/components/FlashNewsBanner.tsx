@@ -1,5 +1,4 @@
 import { Radio } from 'lucide-react'
-import { formatPercent } from '../lib/marketEngine'
 import type { MarketNews } from '../types'
 
 interface FlashNewsBannerProps {
@@ -35,11 +34,14 @@ export function FlashNewsBanner({ news }: FlashNewsBannerProps) {
           </p>
           <p className="text-sm font-medium text-slate-100 leading-snug">{news.headline}</p>
           <p className="text-[10px] text-slate-500 mt-0.5">
-            {news.symbols.join(' · ')}
-            {news.impactPct != null && (
-              <span className={down ? 'text-red-400' : up ? 'text-emerald-400' : ''}>
-                {' '}
-                · ~{formatPercent(news.impactPct * (down ? -1 : up ? 1 : 0), false)} move
+            {news.symbols.join(', ')}{' '}
+            {news.sentiment !== 'neutral' && (
+              <span
+                className={`font-mono font-semibold ${
+                  up ? 'text-emerald-400' : down ? 'text-red-400' : ''
+                }`}
+              >
+                ({up ? '+' : down ? '-' : ''}{(news.impactPct != null ? news.impactPct : 3.0).toFixed(2)}%)
               </span>
             )}
           </p>

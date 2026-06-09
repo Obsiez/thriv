@@ -1,6 +1,55 @@
 /** Default game state for new accounts — mirrors client defaults. */
 import type { GameStatePayload } from './types.js'
 
+function generateGridCardNo(): string {
+  let num = '4'
+  for (let i = 0; i < 15; i++) {
+    num += Math.floor(Math.random() * 10).toString()
+  }
+  return num.replace(/(\d{4})/g, '$1 ').trim()
+}
+
+function generateZenithCardNo(): string {
+  let num = ''
+  if (Math.random() < 0.5) {
+    const prefix = Math.floor(Math.random() * 5) + 51
+    num = prefix.toString()
+    for (let i = 0; i < 14; i++) {
+      num += Math.floor(Math.random() * 10).toString()
+    }
+  } else {
+    const prefix = Math.floor(Math.random() * 500) + 2221
+    num = prefix.toString()
+    for (let i = 0; i < 12; i++) {
+      num += Math.floor(Math.random() * 10).toString()
+    }
+  }
+  return num.replace(/(\d{4})/g, '$1 ').trim()
+}
+
+function generateApexCardNo(): string {
+  const prefix = Math.random() < 0.5 ? '34' : '37'
+  let num = prefix
+  for (let i = 0; i < 13; i++) {
+    num += Math.floor(Math.random() * 10).toString()
+  }
+  const part1 = num.slice(0, 4)
+  const part2 = num.slice(4, 10)
+  const part3 = num.slice(10, 15)
+  return `${part1} ${part2} ${part3}`
+}
+
+function generateCvv(): string {
+  return Math.floor(100 + Math.random() * 900).toString()
+}
+
+function generateExpiry(): string {
+  const month = Math.floor(Math.random() * 12) + 1
+  const monthStr = month < 10 ? `0${month}` : `${month}`
+  const year = 29 + Math.floor(Math.random() * 5)
+  return `${monthStr}/${year}`
+}
+
 export function defaultGameState(): GameStatePayload {
   return {
     portfolio: {
@@ -61,7 +110,20 @@ export function defaultGameState(): GameStatePayload {
       toastQueue: [],
       lastSprintDate: null,
       positionSizerUses: 0,
-      profile: { accentId: 'teal', motto: '' },
+      profile: {
+        accentId: 'teal',
+        motto: '',
+        gridCardNo: generateGridCardNo(),
+        gridCvv: generateCvv(),
+        gridExpiry: generateExpiry(),
+        zenithCardNo: generateZenithCardNo(),
+        zenithCvv: generateCvv(),
+        zenithExpiry: generateExpiry(),
+        apexCardNo: generateApexCardNo(),
+        apexCvv: generateCvv(),
+        apexExpiry: generateExpiry(),
+      },
     },
   }
 }
+

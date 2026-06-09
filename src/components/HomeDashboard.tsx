@@ -28,6 +28,7 @@ interface HomeDashboardProps {
   onClaimQuest: (id: string) => void
   onClaimAll?: () => void
   marketOpen: boolean
+  onOpenProgression: () => void
 }
 
 export function HomeDashboard({
@@ -40,6 +41,7 @@ export function HomeDashboard({
   onClaimQuest,
   onClaimAll,
   marketOpen,
+  onOpenProgression,
 }: HomeDashboardProps) {
   const gain = portfolioGainPct(totalValue)
   const ctx = { portfolio, stocks, progress, selectedSymbol, portfolioValue: totalValue }
@@ -60,7 +62,7 @@ export function HomeDashboard({
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <LevelProfile progress={progress} />
+      <LevelProfile progress={progress} motto={progress.profile?.motto} onClick={onOpenProgression} />
       <MarketPulse stocks={stocks} />
 
       <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">

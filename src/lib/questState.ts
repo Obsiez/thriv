@@ -52,7 +52,11 @@ export function syncQuestEntries(
 
   for (const def of allDefs) {
     if (!def) continue
-    next = ensureQuestEntry(next, def.id)
+    const exists = next.some((q) => q.id === def.id)
+    if (!exists) {
+      next.push({ id: def.id, completed: false, claimed: false })
+      changed = true
+    }
     const idx = next.findIndex((x) => x.id === def.id)
     if (!next[idx].completed && isQuestComplete(def.id, ctx)) {
       next[idx] = { ...next[idx], completed: true, completedAt: Date.now() }

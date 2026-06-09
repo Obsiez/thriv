@@ -53,6 +53,6 @@ export function getGameState(userId: string): GameStateRecord | undefined {
 
 export function saveGameState(state: GameStateRecord): void {
   const db = readDb()
-  db.gameStates[userId] = state
+  db.gameStates[state.userId] = state
   writeDb(db)
 }

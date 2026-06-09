@@ -1,7 +1,8 @@
 import type { Portfolio, PlayerProgress } from '../types'
 import { loadPortfolio, savePortfolio, resetPortfolio } from './storage'
-import { loadProgress, saveProgress, resetProgress } from './progressStorage'
+import { defaultProgress, loadProgress, saveProgress, resetProgress } from './progressStorage'
 import { mergeProfilePrefs } from './profileTheme'
+import { STARTING_CASH } from '../data/stocks'
 
 export function scopeKey(base: string, userId: string | null, guest: boolean): string {
   if (guest) return `${base}-guest`
@@ -17,7 +18,16 @@ export function loadPortfolioForUser(userId: string | null, guest: boolean): Por
   } catch {
     /* ignore */
   }
-  return loadPortfolio()
+  if (guest || (!userId && !guest)) return loadPortfolio()
+  // Authenticated user starting completely fresh
+  return {
+    cash: STARTING_CASH,
+    holdings: [],
+    orders: [],
+    watchlist: ['AAPL', 'NVDA', 'MSFT'],
+    alerts: [],
+    marginLoan: 0,
+  }
 }
 
 export function savePortfolioForUser(
@@ -27,6 +37,9 @@ export function savePortfolioForUser(
 ): void {
   const key = scopeKey('thriv-portfolio', userId, guest)
   localStorage.setItem(key, JSON.stringify(portfolio))
+  if (userId) {
+    localStorage.setItem(`thriv-last-update-${userId}`, String(Date.now()))
+  }
   if (!userId && !guest) savePortfolio(portfolio)
 }
 
@@ -36,18 +49,24 @@ export function loadProgressForUser(userId: string | null, guest: boolean): Play
     const raw = localStorage.getItem(key)
     if (raw) {
       const parsed = JSON.parse(raw) as PlayerProgress
-      const base = loadProgress()
+      const base = defaultProgress()
       return {
         ...base,
         ...parsed,
-        stats: { ...base.stats, ...parsed.stats },
+        stats: {
+          ...base.stats,
+          ...parsed.stats,
+          activitiesPlayed: parsed.stats?.activitiesPlayed ?? 0,
+        },
         profile: mergeProfilePrefs(parsed.profile),
       }
     }
   } catch {
     /* ignore */
   }
-  return loadProgress()
+  if (guest || (!userId && !guest)) return loadProgress()
+  // Authenticated user starting completely fresh
+  return defaultProgress()
 }
 
 export function saveProgressForUser(
@@ -57,6 +76,9 @@ export function saveProgressForUser(
 ): void {
   const key = scopeKey('thriv-progress', userId, guest)
   localStorage.setItem(key, JSON.stringify(progress))
+  if (userId) {
+    localStorage.setItem(`thriv-last-update-${userId}`, String(Date.now()))
+  }
   if (!userId && !guest) saveProgress(progress)
 }
 
@@ -75,8 +97,12 @@ export function applyCloudState(
   portfolio: Portfolio,
   progress: PlayerProgress,
   userId: string,
-  guest: boolean
+  guest: boolean,
+  serverTimeMs?: number
 ): void {
   savePortfolioForUser(portfolio, userId, guest)
   saveProgressForUser(progress, userId, guest)
+  if (userId && serverTimeMs != null) {
+    localStorage.setItem(`thriv-last-update-${userId}`, String(serverTimeMs))
+  }
 }

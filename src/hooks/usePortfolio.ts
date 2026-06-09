@@ -95,9 +95,63 @@ export function usePortfolio({ userId, guest, initial }: UsePortfolioOptions) {
 
 
   useEffect(() => {
+    if (initial) {
+      setPortfolio((prev) => {
+        const normalizedInitial = normalizePortfolio(initial)
+        
+        const cashDiff = prev.cash !== normalizedInitial.cash
+        const loanDiff = (prev.marginLoan ?? 0) !== (normalizedInitial.marginLoan ?? 0)
+        
+        const holdingsDiff =
+          prev.holdings.length !== normalizedInitial.holdings.length ||
+          prev.holdings.some((h, i) => {
+            const ih = normalizedInitial.holdings[i]
+            return !ih || h.symbol !== ih.symbol || h.quantity !== ih.quantity || h.avgCost !== ih.avgCost
+          })
 
-    if (initial) setPortfolio(normalizePortfolio(initial))
+        const ordersDiff =
+          prev.orders.length !== normalizedInitial.orders.length ||
+          prev.orders.some((o, i) => {
+            const io = normalizedInitial.orders[i]
+            return (
+              !io ||
+              o.id !== io.id ||
+              o.symbol !== io.symbol ||
+              o.side !== io.side ||
+              o.type !== io.type ||
+              o.quantity !== io.quantity ||
+              o.limitPrice !== io.limitPrice ||
+              o.fillPrice !== io.fillPrice ||
+              o.status !== io.status ||
+              o.createdAt !== io.createdAt
+            )
+          })
 
+        const watchlistDiff =
+          prev.watchlist.length !== normalizedInitial.watchlist.length ||
+          prev.watchlist.some((w, i) => w !== normalizedInitial.watchlist[i])
+
+        const alertsDiff =
+          prev.alerts.length !== normalizedInitial.alerts.length ||
+          prev.alerts.some((a, i) => {
+            const ia = normalizedInitial.alerts[i]
+            return (
+              !ia ||
+              a.id !== ia.id ||
+              a.symbol !== ia.symbol ||
+              a.targetPrice !== ia.targetPrice ||
+              a.direction !== ia.direction ||
+              a.triggered !== ia.triggered
+            )
+          })
+
+        if (cashDiff || loanDiff || holdingsDiff || ordersDiff || watchlistDiff || alertsDiff) {
+          console.log('[usePortfolio] Structurally syncing portfolio state from initial')
+          return normalizedInitial
+        }
+        return prev
+      })
+    }
   }, [initial])
 
 
@@ -147,257 +201,156 @@ export function usePortfolio({ userId, guest, initial }: UsePortfolioOptions) {
 
 
   const placeOrder = useCallback(
-
     (
-
       stock: Stock,
-
       side: OrderSide,
-
       type: OrderType,
-
       quantity: number,
-
       limitPrice: number | undefined,
-
       allStocks: Stock[],
-
-      useMargin = false
-
+      useMargin = false,
+      portfolioPeak?: number,
+      deactivatedCards: string[] = []
     ): { ok: boolean; message: string; realizedPnl?: number; borrowed?: number } => {
-
       if (quantity <= 0 || !Number.isInteger(quantity)) {
-
         return { ok: false, message: 'Quantity must be a positive whole number.' }
-
       }
-
-
 
       const fill = resolveFillPrice(side, type, stock, limitPrice)
-
       if (!fill.ok) return { ok: false, message: fill.message }
 
-
-
       const price = fill.fillPrice
-
       const total = roundMoney(price * quantity)
-
       const loan = portfolio.marginLoan ?? 0
 
-      let realizedPnl: number | undefined
+      // Calculate commission based on Card Tier (net equity)
+      const netVal = netEquity(portfolio.cash, portfolio.holdings, allStocks, loan)
+      const activeTierVal = Math.max(netVal, portfolioPeak ?? 0)
+      let commission = 5.00
+      let commName = 'GRID'
+      if (activeTierVal >= 500000 && !deactivatedCards.includes('apex')) {
+        commission = 0.00
+        commName = 'APEX'
+      } else if (activeTierVal >= 250000 && !deactivatedCards.includes('zenith')) {
+        commission = 2.50
+        commName = 'ZENITH'
+      }
 
+      const totalWithComm = roundMoney(total + commission)
+      let realizedPnl: number | undefined
       let borrowed = 0
 
-
-
       if (side === 'buy') {
-
         if (!useMargin) {
-
-          if (total > portfolio.cash) {
-
+          if (totalWithComm > portfolio.cash) {
             return {
-
               ok: false,
-
-              message: `Need ${formatCurrency(total)} — you have ${formatCurrency(portfolio.cash)} cash. Use Loan or reduce quantity.`,
-
+              message: `Need ${formatCurrency(totalWithComm)} (includes ${formatCurrency(commission)} ${commName} fee) — you have ${formatCurrency(portfolio.cash)} cash. Use Loan or reduce quantity.`,
             }
-
           }
-
         } else {
-
           const fullPower = buyingPower(
-
             portfolio.cash,
-
             portfolio.holdings,
-
             allStocks,
-
-            loan
-
+            loan,
+            portfolioPeak,
+            deactivatedCards
           )
-
-          if (total > fullPower) {
-
+          if (totalWithComm > fullPower) {
             return {
-
               ok: false,
-
               message: 'Insufficient buying power (cash + margin credit).',
-
             }
-
           }
-
-          if (total > portfolio.cash) {
-
-            borrowed = roundMoney(total - portfolio.cash)
-
+          if (totalWithComm > portfolio.cash) {
+            borrowed = roundMoney(totalWithComm - portfolio.cash)
           }
-
         }
-
       } else {
-
         const holding = portfolio.holdings.find((h) => h.symbol === stock.symbol)
-
         if (!holding || holding.quantity < quantity) {
-
           return { ok: false, message: 'Insufficient shares to sell.' }
-
         }
-
+        if (total < commission) {
+          return { ok: false, message: `Sell proceeds ${formatCurrency(total)} are not enough to cover the ${formatCurrency(commission)} commission.` }
+        }
         realizedPnl = roundMoney((price - holding.avgCost) * quantity)
-
       }
-
-
 
       const order: Order = {
-
         id: uid(),
-
         symbol: stock.symbol,
-
         side,
-
         type,
-
         quantity,
-
         limitPrice: fill.limitPrice,
-
         fillPrice: price,
-
         status: 'filled',
-
         createdAt: Date.now(),
-
       }
 
-
-
       setPortfolio((prev) => {
-
         let cash = safeMoney(prev.cash)
-
         let holdings = [...prev.holdings]
-
         let marginLoan = safeMoney(prev.marginLoan ?? 0)
 
-
-
         if (side === 'buy') {
-
-          if (total > cash) {
-
-            marginLoan = roundMoney(marginLoan + (total - cash))
-
+          if (totalWithComm > cash) {
+            marginLoan = roundMoney(marginLoan + (totalWithComm - cash))
             cash = 0
-
           } else {
-
-            cash = roundMoney(cash - total)
-
+            cash = roundMoney(cash - totalWithComm)
           }
 
           const idx = holdings.findIndex((h) => h.symbol === stock.symbol)
-
           if (idx >= 0) {
-
             const h = holdings[idx]
-
             const newQty = h.quantity + quantity
-
             holdings[idx] = {
-
               ...h,
-
               quantity: newQty,
-
               avgCost: safeMoney((h.avgCost * h.quantity + price * quantity) / newQty),
-
             }
-
           } else {
-
             holdings.push({ symbol: stock.symbol, quantity, avgCost: price })
-
           }
-
         } else {
-
-          let proceeds = total
-
+          let proceeds = roundMoney(total - commission)
           const repay = Math.min(proceeds, marginLoan)
-
           marginLoan = roundMoney(marginLoan - repay)
-
           proceeds = roundMoney(proceeds - repay)
-
           cash = roundMoney(cash + proceeds)
 
           const idx = holdings.findIndex((h) => h.symbol === stock.symbol)
-
           const h = holdings[idx]
-
           const newQty = h.quantity - quantity
-
           if (newQty <= 0) {
-
             holdings = holdings.filter((x) => x.symbol !== stock.symbol)
-
           } else {
-
             holdings[idx] = { ...h, quantity: newQty }
-
           }
-
         }
-
-
 
         return {
-
           ...prev,
-
           cash,
-
           holdings,
-
           marginLoan,
-
           orders: [order, ...prev.orders].slice(0, 100),
-
         }
-
       })
 
-
-
       const action = side === 'buy' ? 'Bought' : 'Sold'
-
+      const commMsg = commission > 0 ? ` (fee: ${formatCurrency(commission)})` : ' (free trade)'
       const msg =
-
         borrowed > 0
-
-          ? `${action} ${quantity} ${stock.symbol} @ ${formatCurrency(price)} · margin ${formatCurrency(borrowed)}`
-
-          : `${action} ${quantity} ${stock.symbol} @ ${formatCurrency(price)} · ${formatCurrency(total)} ${side === 'buy' ? 'paid' : 'received'}`
-
-
+          ? `${action} ${quantity} ${stock.symbol} @ ${formatCurrency(price)}${commMsg} · margin ${formatCurrency(borrowed)}`
+          : `${action} ${quantity} ${stock.symbol} @ ${formatCurrency(price)}${commMsg} · ${formatCurrency(side === 'buy' ? totalWithComm : roundMoney(total - commission))} ${side === 'buy' ? 'paid' : 'received'}`
 
       return { ok: true, message: msg, realizedPnl, borrowed: borrowed > 0 ? borrowed : undefined }
-
     },
-
     [portfolio]
-
   )
 
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Bell, Search } from 'lucide-react'
+import { Bell, Search, Download } from 'lucide-react'
 import { Header } from './components/Header'
 import { TickerBar } from './components/TickerBar'
 import { MarketIndices } from './components/MarketIndices'
@@ -10,6 +10,7 @@ import { PortfolioView } from './components/PortfolioView'
 import { OrdersView } from './components/OrdersView'
 import { LearnView } from './components/LearnView'
 import { NewsPanel } from './components/NewsPanel'
+import { WatchlistTracker } from './components/WatchlistTracker'
 import { StockDetail } from './components/StockDetail'
 import { HomeDashboard } from './components/HomeDashboard'
 import { QuestHub } from './components/QuestHub'
@@ -26,9 +27,12 @@ import { haptic } from './lib/haptics'
 import { Leaderboard } from './components/Leaderboard'
 import { PriceAlerts } from './components/PriceAlerts'
 import { SettingsPanel } from './components/SettingsPanel'
+import { SidebarDesktop } from './components/SidebarDesktop'
+import { LedgerView } from './components/ProfilePanel'
 import { WelcomeModal } from './components/WelcomeModal'
 import { GuestBanner } from './components/GuestBanner'
 import { AppFooter } from './components/AppFooter'
+import { LevelProgressionModal } from './components/LevelProgressionModal'
 import { useMarket, type StockSplitEvent } from './hooks/useMarket'
 import { usePortfolio } from './hooks/usePortfolio'
 import { useProgress } from './hooks/useProgress'
@@ -38,7 +42,8 @@ import { countClaimableQuests } from './lib/questState'
 import { loadLastSymbol, saveLastSymbol } from './lib/lastSymbol'
 import { portfolioGainPctFromStart } from './lib/margin'
 import { FlashNewsBanner } from './components/FlashNewsBanner'
-import type { Sector, TabId } from './types'
+import { EconomicCalendarBar } from './components/EconomicCalendar'
+import type { Sector, TabId, PlayerProgress } from './types'
 
 const SECTORS: (Sector | 'All')[] = [
   'All',
@@ -73,6 +78,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
 
   const {
     portfolio,
+    setPortfolio,
     placeOrder,
     applyStockSplits,
     runLiquidation,
@@ -100,20 +106,107 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
     [applyStockSplits, setFeedback]
   )
 
-  const { stocks, news, flashBanner, marketOpen, setMarketOpen, lastTick, getStock } =
-    useMarket({ onStockSplits: handleStockSplits })
+  const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true)
+  const [macroCount, setMacroCount] = useState(0)
+  const [speedMultiplier, setSpeedMultiplier] = useState(1)
+  const setProgressRef = useRef<React.Dispatch<React.SetStateAction<PlayerProgress>> | null>(null)
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  const isOnlineAndLoggedIn = !!user && isOnline
+
+  const handleMacroTrigger = useCallback(() => {
+    setMacroCount((prev) => prev + 1)
+    if (setProgressRef.current) {
+      setProgressRef.current((prev: PlayerProgress) => {
+        const today = todayKey()
+        const current = prev.macroTriggerDate === today ? (prev.macroTriggerCount ?? 0) : 0
+        return {
+          ...prev,
+          macroTriggerDate: today,
+          macroTriggerCount: current + 1,
+        }
+      })
+    }
+  }, [])
+
+  const {
+    stocks,
+    news,
+    flashBanner,
+    marketOpen,
+    setMarketOpen,
+    lastTick,
+    getStock,
+    nextEvent,
+    pulseActive,
+    resetStocks,
+  } = useMarket({
+    onStockSplits: handleStockSplits,
+    isOnlineAndLoggedIn,
+    macroCount,
+    onMacroTrigger: handleMacroTrigger,
+    sessionKey,
+    speedMultiplier,
+  })
 
   const [tab, setTab] = useState<TabId>('home')
   const [selected, setSelected] = useState(() => loadLastSymbol('AAPL'))
   const mainRef = useRef<HTMLElement>(null)
   const [search, setSearch] = useState('')
   const [sector, setSector] = useState<Sector | 'All'>('All')
-  const [moreOpen, setMoreOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [showBriefing, setShowBriefing] = useState(
-    () => localStorage.getItem('thriv-briefing-date') !== todayKey()
-  )
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [desktopSidebarExpanded, setDesktopSidebarExpanded] = useState(false)
+  const [pwaPrompt, setPwaPrompt] = useState<any>(null)
+  const [showPwaBanner, setShowPwaBanner] = useState(false)
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault()
+      setPwaPrompt(e)
+      const dismissed = sessionStorage.getItem('thriv-pwa-dismissed')
+      if (!dismissed) {
+        setShowPwaBanner(true)
+      }
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    }
+  }, [])
+
+  const handleInstallPwa = async () => {
+    if (!pwaPrompt) return
+    pwaPrompt.prompt()
+    const { outcome } = await pwaPrompt.userChoice
+    console.log(`User response to install prompt: ${outcome}`)
+    setPwaPrompt(null)
+    setShowPwaBanner(false)
+  }
+
+  const handleDismissPwa = () => {
+    sessionStorage.setItem('thriv-pwa-dismissed', 'true')
+    setShowPwaBanner(false)
+  }
+
+  const [levelProgressionOpen, setLevelProgressionOpen] = useState(false)
+  const [showBriefing, setShowBriefing] = useState(false)
+  const hasSetBriefingRef = useRef(false)
+  const lastUserIdRef = useRef<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+
+
 
   const totalValue = portfolioValue(stocks)
   const prevValueRef = useRef(totalValue)
@@ -135,6 +228,8 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
     onTrade,
     onWatchlistAdd,
     onQuizPass,
+    onQuizCorrectAnswer,
+    onActivityAnswer,
     onScenarioComplete,
     onPrediction,
     onSectorSprintComplete,
@@ -145,6 +240,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
     claimDailyBonus,
     claimWeeklyReward,
     onRealizedLoss,
+    onRealizedGain,
     onMarginBorrow,
     onLiquidation,
     reset: resetProg,
@@ -159,6 +255,8 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
     initial: initialProgress,
   })
 
+  setProgressRef.current = setProgress
+
   const questBadge = useMemo(
     () =>
       countClaimableQuests({
@@ -172,12 +270,108 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
   )
 
   useEffect(() => {
+    const today = todayKey()
+    const count = progress && progress.macroTriggerDate === today ? (progress.macroTriggerCount ?? 0) : 0
+    setMacroCount(count)
+  }, [progress])
+
+  useEffect(() => {
+    if (progress?.profile?.simulationSpeedMultiplier != null) {
+      setSpeedMultiplier(progress.profile.simulationSpeedMultiplier)
+    }
+  }, [progress?.profile?.simulationSpeedMultiplier])
+
+  useEffect(() => {
+    if (userId !== lastUserIdRef.current) {
+      lastUserIdRef.current = userId
+      hasSetBriefingRef.current = false
+    }
+  }, [userId])
+
+  useEffect(() => {
+    if (progress && !hasSetBriefingRef.current) {
+      const today = todayKey()
+      const seen = progress.lastBriefingDate === today || localStorage.getItem('thriv-briefing-date') === today
+      setShowBriefing(!seen)
+      if (seen) {
+        hasSetBriefingRef.current = true
+      }
+    }
+  }, [progress])
+
+  useEffect(() => {
     visitTab(tab)
   }, [tab, visitTab])
+
+  // Mobile sidebar gesture disabled as mobile sidebar has been removed
 
   useEffect(() => {
     checkAlerts(stocks)
   }, [stocks, checkAlerts])
+
+  // Watch for triggered price alerts to dispatch browser notifications
+  const prevAlertsRef = useRef(portfolio.alerts)
+  useEffect(() => {
+    const prev = prevAlertsRef.current
+    const current = portfolio.alerts
+    current.forEach((a) => {
+      const wasTriggered = prev.some((x) => x.id === a.id && x.triggered)
+      if (a.triggered && !wasTriggered) {
+        setFeedback({
+          tone: 'win',
+          text: `🔔 Alert: ${a.symbol} crossed ${a.direction} ${formatCurrency(a.targetPrice)}!`,
+        })
+        haptic('alert')
+        if (progress.profile?.pushNotificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
+          try {
+            new Notification('Thriv Price Alert', {
+              body: `${a.symbol} crossed ${a.direction} ${formatCurrency(a.targetPrice)}!`,
+              icon: '/favicon.svg',
+            })
+          } catch (e) {
+            console.warn('Native notification failed:', e)
+          }
+        }
+      }
+    })
+    prevAlertsRef.current = current
+  }, [portfolio.alerts, progress.profile?.pushNotificationsEnabled, setFeedback])
+
+  // Schedule 2x daily engagement notifications (12-hour intervals) when app is backgrounded
+  useEffect(() => {
+    if (!progress.profile?.pushNotificationsEnabled) return
+
+    let reminderTimeoutId: any = null
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        const twelveHoursMs = 12 * 60 * 60 * 1000
+        reminderTimeoutId = setTimeout(() => {
+          if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+              new Notification('Thriv - Market Update', {
+                body: "Your simulated portfolio is active! Log in now to complete today's quests and check stock movements.",
+                icon: '/favicon.svg',
+              })
+            } catch (e) {
+              console.warn('Native notification failed:', e)
+            }
+          }
+        }, twelveHoursMs)
+      } else {
+        if (reminderTimeoutId) {
+          clearTimeout(reminderTimeoutId)
+          reminderTimeoutId = null
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (reminderTimeoutId) clearTimeout(reminderTimeoutId)
+    }
+  }, [progress.profile?.pushNotificationsEnabled])
 
   useEffect(() => {
     const result = runLiquidation(stocks)
@@ -188,8 +382,97 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
     }
   }, [stocks, portfolio.marginLoan, portfolio.holdings, portfolio.cash, runLiquidation, onLiquidation])
 
+  const prevProgressRef = useRef(progress)
+  const prevPortfolioRef = useRef(portfolio)
+
   useEffect(() => {
-    queueCloudSave(portfolio, progress)
+    const dailyBonusClaimed = progress.dailyBonusDate !== prevProgressRef.current.dailyBonusDate
+    
+    // Calculate and award daily card yield on daily login bonus claim
+    if (dailyBonusClaimed && prevProgressRef.current.dailyBonusDate && progress.dailyBonusDate) {
+      let yieldPct = 0
+      let tierName = ''
+      const activeVal = Math.max(totalValue, progress.stats.portfolioPeak)
+      const deactivated = progress.profile?.deactivatedCards ?? []
+      if (activeVal >= 500000 && !deactivated.includes('apex')) {
+        yieldPct = 0.0010 // APEX: 3% monthly yield / 30 = 0.1% daily
+        tierName = 'APEX'
+      } else if (activeVal >= 250000 && !deactivated.includes('zenith')) {
+        yieldPct = 0.0005 // ZENITH: 1.5% monthly yield / 30 = 0.05% daily
+        tierName = 'ZENITH'
+      }
+
+      if (yieldPct > 0) {
+        const reward = Math.round(totalValue * yieldPct)
+        if (reward > 0) {
+          setPortfolio((prev) => ({
+            ...prev,
+            cash: prev.cash + reward,
+          }))
+          haptic('success')
+          setFeedback({
+            tone: 'win',
+            text: `Card yield received: +${formatCurrency(reward)} (${tierName} Tier Daily Return)`,
+          })
+        }
+      }
+    }
+
+    const questsChanged = progress.quests.some((q) => {
+      const prevQ = prevProgressRef.current.quests?.find((x) => x.id === q.id)
+      return q.claimed && !prevQ?.claimed
+    })
+    const weeklyRewardClaimed = progress.weeklyChallengeDone !== prevProgressRef.current.weeklyChallengeDone
+    
+    const statsChanged =
+      progress.stats.activitiesPlayed !== prevProgressRef.current.stats.activitiesPlayed
+
+    const holdingsChanged =
+      portfolio.holdings.length !== prevPortfolioRef.current.holdings.length ||
+      portfolio.holdings.some((h, i) => {
+        const ph = prevPortfolioRef.current.holdings[i]
+        return !ph || h.symbol !== ph.symbol || h.quantity !== ph.quantity || h.avgCost !== ph.avgCost
+      })
+
+    const ordersChanged =
+      portfolio.orders.length !== prevPortfolioRef.current.orders.length ||
+      portfolio.orders.some((o, i) => {
+        const po = prevPortfolioRef.current.orders[i]
+        return (
+          !po ||
+          o.id !== po.id ||
+          o.symbol !== po.symbol ||
+          o.side !== po.side ||
+          o.type !== po.type ||
+          o.quantity !== po.quantity ||
+          o.limitPrice !== po.limitPrice ||
+          o.fillPrice !== po.fillPrice ||
+          o.status !== po.status ||
+          o.createdAt !== po.createdAt
+        )
+      })
+
+    const tradeOrLoanChanged =
+      portfolio.cash !== prevPortfolioRef.current.cash ||
+      holdingsChanged ||
+      ordersChanged ||
+      (portfolio.marginLoan ?? 0) !== (prevPortfolioRef.current.marginLoan ?? 0)
+
+    const profileChanged =
+      JSON.stringify(progress.profile ?? {}) !== JSON.stringify(prevProgressRef.current.profile ?? {})
+
+    const immediate =
+      dailyBonusClaimed ||
+      questsChanged ||
+      weeklyRewardClaimed ||
+      statsChanged ||
+      tradeOrLoanChanged ||
+      profileChanged
+
+    queueCloudSave(portfolio, progress, immediate)
+    
+    prevProgressRef.current = progress
+    prevPortfolioRef.current = portfolio
   }, [portfolio, progress, queueCloudSave])
 
   useEffect(() => {
@@ -269,7 +552,6 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
 
   function navigate(t: TabId) {
     setTab(t)
-    setMoreOpen(false)
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
     if (t === 'quests') syncQuests()
   }
@@ -278,18 +560,15 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
     if (tab === 'quests') syncQuests()
   }, [tab, syncQuests])
 
-  function handleReset() {
-    if (confirm('Reset portfolio to $100,000 cash? Mission progress is kept.')) {
-      resetPortfolio()
-    }
+  function handleBalanceReset() {
+    resetPortfolio()
   }
 
   function handleFullReset() {
-    if (confirm('Reset all simulation data and mission progress?')) {
-      resetPortfolio()
-      resetProg()
-      setTab('home')
-    }
+    resetPortfolio()
+    resetProg()
+    resetStocks()
+    setTab('home')
   }
 
   function handleWatch(symbol: string) {
@@ -307,7 +586,32 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
     useMargin = false
   ) {
     if (!selectedStock) return { ok: false, message: 'No stock selected.' }
-    const result = placeOrder(selectedStock, side, type, qty, limit, stocks, useMargin)
+
+    // Enforce Daily Maximum Loss Threshold Risk Control
+    const maxLoss = progress.profile?.maxLossThreshold ?? 0
+    if (maxLoss > 0) {
+      const dayStart = progress.stats.dayStartValue
+      const dropPct = dayStart > 0 ? ((dayStart - totalValue) / dayStart) * 100 : 0
+      if (dropPct >= maxLoss) {
+        haptic('alert')
+        return {
+          ok: false,
+          message: `Trading locked! Daily loss threshold of ${maxLoss}% reached. Drawdown: ${dropPct.toFixed(1)}%.`
+        }
+      }
+    }
+
+    const result = placeOrder(
+      selectedStock,
+      side,
+      type,
+      qty,
+      limit,
+      stocks,
+      useMargin,
+      progress.stats.portfolioPeak,
+      progress.profile?.deactivatedCards
+    )
     if (result.ok) {
       haptic('success')
       onTrade(side, type)
@@ -320,6 +624,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
           text: `Realized loss on ${selectedStock.symbol}: −${formatCurrency(loss)}`,
         })
       } else if (result.realizedPnl != null && result.realizedPnl > 0) {
+        onRealizedGain(result.realizedPnl)
         setFeedback({
           tone: 'win',
           text: `Realized gain on ${selectedStock.symbol}: +${formatCurrency(result.realizedPnl)}`,
@@ -332,8 +637,14 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
   }
 
   function dismissBriefing() {
-    localStorage.setItem('thriv-briefing-date', todayKey())
+    const today = todayKey()
+    localStorage.setItem('thriv-briefing-date', today)
     setShowBriefing(false)
+    hasSetBriefingRef.current = true
+    setProgress((prev) => ({
+      ...prev,
+      lastBriefingDate: today,
+    }))
   }
 
   return (
@@ -350,31 +661,83 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
         portfolio={portfolio}
         progress={progress}
         onFullReset={handleFullReset}
+        onBalanceReset={handleBalanceReset}
         onProfileChange={(profile) => setProgress((p) => ({ ...p, profile }))}
       />
+      <LevelProgressionModal
+        open={levelProgressionOpen}
+        onClose={() => setLevelProgressionOpen(false)}
+        progress={progress}
+      />
+
+      {showPwaBanner && (
+        <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:bottom-4 md:w-96 z-[100] rounded-2xl border border-white/[0.08] bg-surface-900 p-4 shadow-2xl backdrop-blur-md flex items-center justify-between gap-4 animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-thriv-500/10 border border-thriv-500/20 text-thriv-400 shrink-0">
+              <Download className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-white">Install Thriv App</p>
+              <p className="text-[10px] text-slate-400 leading-normal mt-0.5">Add to home screen for native fullscreen experience.</p>
+            </div>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleDismissPwa}
+              className="px-2.5 py-1.5 text-[10px] font-semibold text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+            >
+              Later
+            </button>
+            <button
+              type="button"
+              onClick={handleInstallPwa}
+              className="px-3 py-1.5 text-[10px] font-semibold bg-thriv-600 hover:bg-thriv-500 text-white rounded-lg transition-colors shadow-lg shadow-thriv-600/15"
+            >
+              Install
+            </button>
+          </div>
+        </div>
+      )}
+
 
       {guest && <GuestBanner onSignUp={() => logout()} />}
 
-      <Header
-        activeTab={tab}
-        onTab={navigate}
-        totalValue={totalValue}
-        marketOpen={marketOpen}
-        onToggleMarket={() => setMarketOpen((o) => !o)}
-        onReset={handleReset}
-        lastTick={lastTick}
-        progress={progress}
-        questBadge={questBadge}
-        portfolioValue={totalValue}
-        portfolioUnderWater={portfolioUnderWater}
-        displayName={user?.displayName}
-        accentId={progress.profile?.accentId ?? 'teal'}
-        onOpenSettings={() => setSettingsOpen(true)}
-      />
-      <TickerBar stocks={stocks} />
-      <FlashNewsBanner news={flashBanner} />
+      <div className="flex flex-1 min-h-0 relative">
+        <SidebarDesktop
+          activeTab={tab}
+          onTab={navigate}
+          progress={progress}
+          questBadge={questBadge}
+          expanded={desktopSidebarExpanded}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenProgression={() => setLevelProgressionOpen(true)}
+          onToggleDesktopSidebar={() => setDesktopSidebarExpanded(!desktopSidebarExpanded)}
+        />
+        
+        <div className={`flex-1 min-w-0 flex flex-col ${desktopSidebarExpanded ? 'md:pl-[240px]' : 'md:pl-[68px]'}`}>
+          <Header
+            onTab={navigate}
+            totalValue={totalValue}
+            marketOpen={marketOpen}
+            onToggleMarket={() => setMarketOpen((o) => !o)}
+            lastTick={lastTick}
+            progress={progress}
+            portfolioValue={totalValue}
+            portfolioUnderWater={portfolioUnderWater}
+            onOpenProgression={() => setLevelProgressionOpen(true)}
+            onOpenSidebar={() => {}}
+            onOpenSettings={() => setSettingsOpen(true)}
+            displayName={user?.displayName ?? ''}
+            guest={guest}
+          />
+          <TickerBar stocks={stocks} />
+          {nextEvent.macroState !== 'dormant' && (
+            <EconomicCalendarBar event={nextEvent} pulseActive={pulseActive} />
+          )}
+          <FlashNewsBanner news={flashBanner} />
 
-      {triggeredAlerts.length > 0 && tab === 'market' && (
+          {triggeredAlerts.length > 0 && tab === 'market' && (
         <div className="mx-auto w-full max-w-[1600px] px-3 pt-2 lg:px-6">
           <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-3 py-2 text-xs text-emerald-300">
             <Bell className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
@@ -422,6 +785,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
                 onClaimQuest={claimQuest}
                 onClaimAll={claimAllQuests}
                 marketOpen={marketOpen}
+                onOpenProgression={() => setLevelProgressionOpen(true)}
               />
             </div>
             <div className="space-y-4">
@@ -478,7 +842,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
             <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
               <div className="lg:col-span-2 space-y-4">
                 {selectedStock && (
-                  <PriceChart stock={selectedStock} onRangeView={onChartRangeView} />
+                  <PriceChart stock={selectedStock} onRangeView={onChartRangeView} orders={portfolio.orders} showVolume={progress.profile?.showVolume ?? true} />
                 )}
                 <MarketTable
                   stocks={filteredStocks}
@@ -498,7 +862,17 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
                   onRemove={removeAlert}
                 />
                 <div>
-                  <h3 className="mb-2 text-sm font-semibold text-slate-400">Watchlist</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-slate-400">Watchlist</h3>
+                    <button
+                      type="button"
+                      onClick={() => navigate('watchlist-tracker')}
+                      className="text-[11px] font-semibold text-thriv-400 hover:text-thriv-300 hover:underline flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <Bell className="h-3 w-3" />
+                      Manage Alerts & Tracker
+                    </button>
+                  </div>
                   <div className="glass rounded-xl divide-y divide-white/[0.06]">
                     {watchlistStocks.length === 0 ? (
                       <p className="p-4 text-sm text-slate-500">Star stocks to watch.</p>
@@ -530,7 +904,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
           <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
             <div className="space-y-4 order-2 lg:order-1">
               {selectedStock ? (
-                <PriceChart stock={selectedStock} onRangeView={onChartRangeView} />
+                <PriceChart stock={selectedStock} onRangeView={onChartRangeView} orders={portfolio.orders} showVolume={progress.profile?.showVolume ?? true} />
               ) : (
                 <p className="text-slate-500 text-sm">Select a symbol below.</p>
               )}
@@ -551,6 +925,8 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
                 stocks={stocks}
                 holdingQty={holdingQty}
                 onTrade={handleTrade}
+                portfolioPeak={progress.stats.portfolioPeak}
+                profile={progress.profile}
               />
             </div>
           </div>
@@ -564,6 +940,8 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
             stocks={stocks}
             totalValue={totalValue}
             startingCash={STARTING_CASH}
+            orders={portfolio.orders}
+            portfolioPeak={progress.stats.portfolioPeak}
           />
         )}
 
@@ -587,12 +965,14 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
             selectedSymbol={selected}
             portfolioCash={portfolio.cash}
             onQuizPass={onQuizPass}
+            onQuizCorrectAnswer={onQuizCorrectAnswer}
             onScenarioComplete={onScenarioComplete}
             onPrediction={onPrediction}
             onSectorSprintComplete={onSectorSprintComplete}
             onCompareUsed={onCompareUsed}
             onPositionSizerUsed={onPositionSizerUsed}
             onFlashQuotesComplete={onFlashQuotesComplete}
+            onActivityAnswer={onActivityAnswer}
           />
         )}
 
@@ -601,17 +981,61 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
         {tab === 'news' && <NewsPanel news={news} />}
 
         {tab === 'learn' && <LearnView onStartQuest={() => navigate('quests')} />}
+
+        {tab === 'ledger' && (
+          <LedgerView
+            portfolio={portfolio}
+            progress={progress}
+            totalValue={totalValue}
+            stocks={stocks}
+            onProfileChange={(profile) => setProgress((p) => ({ ...p, profile }))}
+          />
+        )}
+
+        {tab === 'watchlist-tracker' && (
+          <WatchlistTracker
+            stocks={stocks}
+            watchlist={portfolio.watchlist}
+            alerts={portfolio.alerts}
+            onToggleWatch={handleWatch}
+            onAddAlert={addAlert}
+            onRemoveAlert={removeAlert}
+            onSelectStock={(symbol) => {
+              selectSymbol(symbol)
+              navigate('market')
+            }}
+            onNavigate={navigate}
+            pushNotificationsEnabled={progress.profile?.pushNotificationsEnabled ?? false}
+            onToggleNotifications={(enabled) => {
+              setProgress((prev) => ({
+                ...prev,
+                profile: {
+                  ...prev.profile,
+                  pushNotificationsEnabled: enabled,
+                },
+              }))
+            }}
+          />
+        )}
       </main>
 
-      <AppFooter />
+          <AppFooter />
+        </div>
+      </div>
 
+      <div className="progressive-blur-container md:hidden" aria-hidden />
       <MobileNav
         activeTab={tab}
         onTab={navigate}
-        onMore={() => setMoreOpen(true)}
+        onMoreClick={() => setMoreMenuOpen(true)}
         questBadge={questBadge}
       />
-      <MoreMenu open={moreOpen} onClose={() => setMoreOpen(false)} onTab={navigate} />
+      <MoreMenu
+        open={moreMenuOpen}
+        onClose={() => setMoreMenuOpen(false)}
+        onTab={navigate}
+        questBadge={questBadge}
+      />
     </div>
   )
 }

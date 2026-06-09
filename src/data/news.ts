@@ -240,9 +240,9 @@ export function getInitialNews(count = 6): MarketNews[] {
   )
 }
 
-/** Unpredictable flash interval: 2–15 minutes (ms). */
+/** Unpredictable flash interval: 2–10 minutes (ms). */
 export function randomFlashDelayMs(): number {
   const min = 2 * 60 * 1000
-  const max = 15 * 60 * 1000
+  const max = 10 * 60 * 1000
   return min + Math.floor(Math.random() * (max - min + 1))
 }

@@ -1,178 +1,150 @@
+import { useState } from 'react'
 import {
-  Activity,
-  BookOpen,
-  Briefcase,
-  Gamepad2,
-  Home,
-  LayoutGrid,
-  ListOrdered,
-  Newspaper,
   Pause,
   Play,
-  RotateCcw,
-  Settings,
-  Sparkles,
 } from 'lucide-react'
 import { Logo } from './Logo'
-import { LevelProfile } from './LevelProfile'
-import { ProfileAvatar } from './ProfileAvatar'
 import { SyncStatus } from './SyncStatus'
+
 import { formatCurrency } from '../lib/marketEngine'
 import { getLevelInfo, xpProgressInLevel } from '../lib/progression'
-import type { AccentId } from '../lib/profileTheme'
 import type { PlayerProgress, TabId } from '../types'
 
 interface HeaderProps {
-  activeTab: TabId
   onTab: (tab: TabId) => void
   totalValue: number
   marketOpen: boolean
   onToggleMarket: () => void
-  onReset: () => void
   lastTick: number
   progress: PlayerProgress
-  questBadge: number
   portfolioValue?: number
   portfolioUnderWater?: boolean
-  displayName?: string
-  accentId?: AccentId
+  onOpenProgression: () => void
+  onOpenSidebar: () => void
   onOpenSettings: () => void
+  displayName: string
+  guest?: boolean
 }
 
-const DESKTOP_TABS: { id: TabId; label: string; icon: typeof Home }[] = [
-  { id: 'home', label: 'Home', icon: Home },
-  { id: 'market', label: 'Market', icon: LayoutGrid },
-  { id: 'trade', label: 'Trade', icon: Activity },
-  { id: 'portfolio', label: 'Portfolio', icon: Briefcase },
-  { id: 'quests', label: 'Quests', icon: Gamepad2 },
-  { id: 'activities', label: 'Play', icon: Sparkles },
-  { id: 'news', label: 'News', icon: Newspaper },
-  { id: 'orders', label: 'Orders', icon: ListOrdered },
-  { id: 'learn', label: 'Learn', icon: BookOpen },
-]
-
 const iconBtn =
-  'flex items-center justify-center rounded-lg border border-white/[0.08] bg-surface-800 text-slate-400 hover:text-white touch-manipulation h-10 w-10 shrink-0'
+  'flex items-center justify-center rounded-lg border border-white/[0.08] bg-surface-800 text-slate-400 hover:text-white hover:border-thriv-500/40 hover:ring-1 hover:ring-thriv-500/20 transition-all duration-150 touch-manipulation h-10 w-10 shrink-0'
 
 export function Header({
-  activeTab,
   onTab,
   totalValue,
   marketOpen,
   onToggleMarket,
-  onReset,
   lastTick,
   progress,
-  questBadge,
   portfolioUnderWater = false,
-  displayName,
-  accentId = 'teal',
+  onOpenProgression,
   onOpenSettings,
+  displayName,
+  guest = false,
 }: HeaderProps) {
-  const initial = (displayName?.trim() || 'T').charAt(0).toUpperCase()
   const rank = getLevelInfo(progress.level)
   const bar = xpProgressInLevel(progress.xp)
+  const accentId = progress.profile?.accentId ?? 'teal'
+  const initial = guest ? 'T' : (displayName || 'U').charAt(0).toUpperCase()
+  const [balanceHidden, setBalanceHidden] = useState(true)
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-surface-900/95 backdrop-blur-lg">
-      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-2 px-3 py-2 sm:px-4 sm:py-3 lg:px-6">
-        <button type="button" onClick={() => onTab('home')} className="shrink-0 touch-manipulation">
-          <Logo size="sm" />
-        </button>
-
-        <div className="hidden lg:block flex-1 max-w-sm mx-4">
-          <LevelProfile progress={progress} compact motto={progress.profile?.motto} />
+    <header className="sticky top-0 z-50 border-b border-white/[0.08] apple-glass">
+      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-2 px-3 py-2 sm:px-4 sm:py-3 lg:px-6 relative">
+        {/* Left Section: Logo only (Left Corner) */}
+        <div className="flex items-center gap-2 md:gap-3 shrink-0 z-10">
+          <button
+            type="button"
+            onClick={() => onTab('home')}
+            className="touch-manipulation flex items-center justify-center p-0 m-0 border-0 bg-transparent focus:outline-none"
+          >
+            <Logo size="sm" className="md:hidden" />
+            <Logo size="md" className="hidden md:flex" />
+          </button>
         </div>
 
-        <nav className="hidden md:flex flex-wrap gap-0.5 rounded-xl bg-surface-800 p-0.5 max-w-[70%] overflow-x-auto">
-          {DESKTOP_TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onTab(id)}
-              className={`relative flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium whitespace-nowrap lg:px-3 lg:py-2 lg:text-sm ${
-                activeTab === id
-                  ? 'bg-thriv-700 text-white'
-                  : 'text-slate-400 hover:bg-surface-700 hover:text-white'
+        {/* Right Section: Balance, Pause, Sync, Avatar */}
+        <div className="flex items-center gap-2 md:gap-2.5 shrink-0 ml-auto z-10">
+          {/* Portfolio balance - mobile only, clickable to reveal/hide (larger text sizes) */}
+          <button
+            type="button"
+            onClick={() => setBalanceHidden(!balanceHidden)}
+            className="text-right focus:outline-none cursor-pointer select-none md:hidden block"
+            aria-label={balanceHidden ? 'Show portfolio balance' : 'Hide portfolio balance'}
+          >
+            <p className="text-[10px] uppercase tracking-wider text-slate-500 leading-none mb-0.5">Portfolio</p>
+            <p
+              className={`font-mono text-sm font-bold tabular-nums leading-tight ${
+                portfolioUnderWater ? 'text-red-400' : 'text-thriv-300'
               }`}
             >
-              <Icon className="h-3.5 w-3.5 lg:h-4 lg:w-4" strokeWidth={1.75} />
-              {label}
-              {id === 'quests' && questBadge > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-surface-900">
-                  {questBadge > 9 ? '9+' : questBadge}
-                </span>
+              {balanceHidden ? '$ ••••••' : formatCurrency(totalValue)}
+            </p>
+          </button>
+
+          {/* Portfolio balance - desktop only, always visible */}
+          <div className="hidden md:block text-right select-none">
+            <p className="text-[10px] uppercase tracking-wider text-slate-500 leading-normal">Portfolio</p>
+            <p
+              className={`font-mono text-sm lg:text-lg font-semibold tabular-nums leading-normal ${
+                portfolioUnderWater ? 'text-red-400' : 'text-thriv-300'
+              }`}
+            >
+              {formatCurrency(totalValue)}
+            </p>
+          </div>
+
+          {/* Button Group: pause, cloud, profile */}
+          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onToggleMarket}
+              className={iconBtn}
+              aria-label={marketOpen ? 'Pause market' : 'Resume market'}
+            >
+              {marketOpen ? (
+                <Pause className="h-4 w-4 text-emerald-400" strokeWidth={1.75} />
+              ) : (
+                <Play className="h-4 w-4" strokeWidth={1.75} />
               )}
             </button>
-          ))}
-        </nav>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <div className="text-right sm:hidden pr-0.5">
-            <p
-              className={`font-mono text-xs font-semibold tabular-nums ${
-                portfolioUnderWater ? 'text-red-400' : 'text-thriv-300'
+            {/* Sync status - hidden on mobile (md break) */}
+            <div className="hidden md:block shrink-0">
+              <SyncStatus />
+            </div>
+
+            {/* Custom Profile Card */}
+            <button
+              type="button"
+              onClick={onOpenSettings}
+              className={`flex items-center justify-center rounded-lg border transition-colors duration-150 h-10 w-10 shrink-0 font-mono font-bold text-sm select-none ${
+                accentId === 'teal'
+                  ? 'bg-gradient-to-br from-thriv-950/90 to-thriv-900/30 border-thriv-500/20 text-thriv-300 hover:border-thriv-500/55'
+                  : accentId === 'indigo'
+                  ? 'bg-gradient-to-br from-indigo-950/90 to-indigo-900/30 border-indigo-500/20 text-indigo-300 hover:border-indigo-500/55'
+                  : accentId === 'amber'
+                  ? 'bg-gradient-to-br from-amber-950/90 to-amber-900/30 border-amber-500/20 text-amber-300 hover:border-amber-500/55'
+                  : accentId === 'emerald'
+                  ? 'bg-gradient-to-br from-emerald-950/90 to-emerald-900/30 border-emerald-500/20 text-emerald-300 hover:border-emerald-500/55'
+                  : accentId === 'violet'
+                  ? 'bg-gradient-to-br from-violet-950/90 to-violet-900/30 border-violet-500/20 text-violet-300 hover:border-violet-500/55'
+                  : 'bg-gradient-to-br from-slate-900/90 to-slate-800/30 border-slate-500/20 text-slate-200 hover:border-slate-400/50'
               }`}
             >
-              {formatCurrency(totalValue)}
-            </p>
-            <p className="text-[9px] text-slate-500">Lv.{progress.level}</p>
+              {initial}
+            </button>
           </div>
-          <div className="hidden sm:block text-right">
-            <p className="text-[10px] uppercase tracking-wider text-slate-500">Portfolio</p>
-            <p
-              className={`font-mono text-sm lg:text-lg font-semibold tabular-nums ${
-                portfolioUnderWater ? 'text-red-400' : 'text-thriv-300'
-              }`}
-            >
-              {formatCurrency(totalValue)}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onToggleMarket}
-            className={iconBtn}
-            aria-label={marketOpen ? 'Pause market' : 'Resume market'}
-          >
-            {marketOpen ? (
-              <Pause className="h-4 w-4 text-emerald-400" strokeWidth={1.75} />
-            ) : (
-              <Play className="h-4 w-4" strokeWidth={1.75} />
-            )}
-          </button>
-
-          <SyncStatus />
-
-          <button
-            type="button"
-            onClick={onReset}
-            className={`hidden sm:flex ${iconBtn}`}
-            aria-label="Reset portfolio cash"
-          >
-            <RotateCcw className="h-4 w-4" strokeWidth={1.75} />
-          </button>
-
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className={`${iconBtn} sm:!w-auto sm:justify-center sm:pl-1 sm:pr-2 text-slate-300`}
-            aria-label="Settings and profile"
-          >
-            <ProfileAvatar
-              initial={initial}
-              accentId={accentId}
-              size="sm"
-              className="sm:mr-2"
-            />
-            <Settings className="h-4 w-4 hidden sm:block shrink-0" strokeWidth={1.75} />
-          </button>
         </div>
       </div>
 
-      <div className="md:hidden px-3 pb-2">
+      <button
+        type="button"
+        onClick={onOpenProgression}
+        className="w-full text-left md:hidden px-3 pb-2.5 active:scale-[0.99] transition-transform focus:outline-none focus:ring-1 focus:ring-thriv-500/20 rounded-md cursor-pointer group"
+      >
         <div className="flex justify-between text-[10px] text-slate-500 mb-1">
-          <span className="font-mono text-slate-400">{rank.rankCode}</span>
+          <span className="font-mono text-slate-400 group-hover:text-thriv-400 transition-colors">{rank.rankCode}</span>
           <span className="font-mono tabular-nums">
             {bar.current}/{bar.max} XP
           </span>
@@ -183,7 +155,7 @@ export function Header({
             style={{ width: `${bar.pct}%` }}
           />
         </div>
-      </div>
+      </button>
 
       <p className="sr-only" aria-live="polite">
         Market updated {new Date(lastTick).toLocaleTimeString()}

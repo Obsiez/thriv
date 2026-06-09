@@ -82,6 +82,10 @@ export function isQuestComplete(questId: string, ctx: QuestCheckContext): boolea
         progress.tabsVisited.includes('chart-5D') ||
         progress.tabsVisited.includes('chart-1M')
       )
+    case 'daily-sizer':
+      return progress.lastSizerDate === progress.lastVisitDate
+    case 'daily-predict':
+      return progress.lastPredictDate === progress.lastVisitDate
     default:
       return false
   }

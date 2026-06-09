@@ -10,23 +10,31 @@ interface LevelProfileProps {
   progress: PlayerProgress
   compact?: boolean
   motto?: string
+  onClick?: () => void
 }
 
-export function LevelProfile({ progress, compact, motto }: LevelProfileProps) {
+export function LevelProfile({ progress, compact, motto, onClick }: LevelProfileProps) {
   const bar = xpProgressInLevel(progress.xp)
   const info = getLevelInfo(progress.level)
   const tier = TIER_STYLES[info.tier]
 
   if (compact) {
-    return (
-      <div className="flex items-center gap-2 min-w-0">
+    const compactContent = (
+      <>
         <div
           className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border font-mono text-xs font-semibold tracking-tight ${tier.badge}`}
         >
           {info.rankCode}
         </div>
         <div className="min-w-0 flex-1 hidden sm:block">
-          <p className="truncate text-[11px] font-medium text-slate-300">{info.title}</p>
+          <div className="flex justify-between items-center gap-2">
+            <p className="truncate text-[11px] font-medium text-slate-300 group-hover:text-white transition-colors">
+              {info.title}
+            </p>
+            <span className="font-mono text-[9px] text-slate-500 tabular-nums shrink-0">
+              {bar.current}/{bar.max} XP
+            </span>
+          </div>
           {motto && (
             <p className="truncate text-[10px] text-slate-500 italic">&ldquo;{motto}&rdquo;</p>
           )}
@@ -37,12 +45,36 @@ export function LevelProfile({ progress, compact, motto }: LevelProfileProps) {
             />
           </div>
         </div>
+      </>
+    )
+
+    if (onClick) {
+      return (
+        <button
+          type="button"
+          onClick={onClick}
+          className="group flex w-full items-center gap-2 min-w-0 text-left transition-colors cursor-pointer focus:outline-none"
+        >
+          {compactContent}
+        </button>
+      )
+    }
+
+    return (
+      <div className="flex items-center gap-2 min-w-0">
+        {compactContent}
       </div>
     )
   }
 
-  return (
-    <div className="relative overflow-hidden rounded-xl border border-white/[0.06] bg-gradient-to-br from-surface-800/90 to-surface-900/95">
+  const containerClass = `relative overflow-hidden rounded-xl border border-white/[0.06] bg-gradient-to-br from-surface-800/90 to-surface-900/95 transition-all duration-200 ${
+    onClick
+      ? 'hover:border-thriv-700/40 hover:shadow-[0_0_15px_rgba(20,184,150,0.04)] focus:border-thriv-700/40 active:border-thriv-700/40 outline-none focus:outline-none cursor-pointer w-full text-left'
+      : ''
+  }`
+
+  const cardContent = (
+    <>
       <div className={`absolute inset-0 bg-gradient-to-br opacity-30 ${tier.ring}`} />
       <div className="relative p-4 sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -114,6 +146,20 @@ export function LevelProfile({ progress, compact, motto }: LevelProfileProps) {
           </div>
         </div>
       </div>
+    </>
+  )
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={containerClass}>
+        {cardContent}
+      </button>
+    )
+  }
+
+  return (
+    <div className={containerClass}>
+      {cardContent}
     </div>
   )
 }

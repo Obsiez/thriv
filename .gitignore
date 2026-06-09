@@ -5,3 +5,6 @@ server/data/db.json
 *.local
 .env
 .DS_Store
+scratch/
+thriv/
+*.bak

@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { SCENARIOS } from '../data/scenarios'
+import { haptic } from '../lib/haptics'
 
 interface ScenarioActivityProps {
   onBack: () => void
   onComplete: (xp: number) => void
+  onAnswer?: (correct: boolean) => void
 }
 
-export function ScenarioActivity({ onBack, onComplete }: ScenarioActivityProps) {
+export function ScenarioActivity({ onBack, onComplete, onAnswer }: ScenarioActivityProps) {
   const [index, setIndex] = useState(0)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [xpEarned, setXpEarned] = useState(0)
@@ -15,6 +17,14 @@ export function ScenarioActivity({ onBack, onComplete }: ScenarioActivityProps) 
   const scenario = SCENARIOS[index % SCENARIOS.length]
 
   function choose(xp: number, text: string) {
+    const maxXP = Math.max(...scenario.choices.map((c) => c.xp))
+    const isCorrect = xp === maxXP
+    haptic(isCorrect ? 'success' : 'alert')
+    
+    if (onAnswer) {
+      onAnswer(isCorrect)
+    }
+
     setFeedback(text)
     setXpEarned(xp)
     onComplete(xp)
