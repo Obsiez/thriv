@@ -56,6 +56,48 @@ const SECTORS: (Sector | 'All')[] = [
   'Communication',
 ]
 
+const getTabFromPath = (path: string): TabId => {
+  const normalized = path.replace(/^\/|\/$/g, '').toLowerCase()
+  if (normalized === 'market/watchlist-tracker') {
+    return 'watchlist-tracker'
+  }
+  switch (normalized) {
+    case 'market':
+      return 'market'
+    case 'trade':
+      return 'trade'
+    case 'portfolio':
+      return 'portfolio'
+    case 'quests':
+      return 'quests'
+    case 'activities':
+      return 'activities'
+    case 'news':
+      return 'news'
+    case 'orders':
+      return 'orders'
+    case 'learn':
+      return 'learn'
+    case 'ledger':
+      return 'ledger'
+    case 'home':
+    case '':
+      return 'home'
+    default:
+      return 'home'
+  }
+}
+
+const getPathFromTab = (tabId: TabId): string => {
+  if (tabId === 'watchlist-tracker') {
+    return '/market/watchlist-tracker'
+  }
+  if (tabId === 'home') {
+    return '/'
+  }
+  return `/${tabId}`
+}
+
 interface ThrivAppProps {
   sessionKey: string
 }
@@ -159,7 +201,41 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
     speedMultiplier,
   })
 
-  const [tab, setTab] = useState<TabId>('home')
+  const initialTab = useMemo(() => {
+    const path = window.location.pathname
+    const normalized = path.replace(/^\/|\/$/g, '').toLowerCase()
+    const validTabs = [
+      'market',
+      'trade',
+      'portfolio',
+      'quests',
+      'activities',
+      'news',
+      'orders',
+      'learn',
+      'ledger',
+      'market/watchlist-tracker',
+      'home',
+      ''
+    ]
+    if (!validTabs.includes(normalized)) {
+      window.history.replaceState(null, '', '/')
+      return 'home'
+    }
+    return getTabFromPath(path)
+  }, [])
+
+  const [tab, setTab] = useState<TabId>(initialTab)
+
+  // Synchronize browser history navigation (back/forward and swipes) with active tab state
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname
+      setTab(getTabFromPath(path))
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
   const [selected, setSelected] = useState(() => loadLastSymbol('AAPL'))
   const mainRef = useRef<HTMLElement>(null)
   const [search, setSearch] = useState('')
@@ -550,8 +626,18 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
     saveLastSymbol(symbol)
   }
 
+  const updateTabAndHistory = (newTab: TabId, replace = false) => {
+    const path = getPathFromTab(newTab)
+    if (replace) {
+      window.history.replaceState(null, '', path)
+    } else {
+      window.history.pushState(null, '', path)
+    }
+    setTab(newTab)
+  }
+
   function navigate(t: TabId) {
-    setTab(t)
+    updateTabAndHistory(t)
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
     if (t === 'quests') syncQuests()
   }
@@ -568,7 +654,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
     resetPortfolio()
     resetProg()
     resetStocks()
-    setTab('home')
+    updateTabAndHistory('home')
   }
 
   function handleWatch(symbol: string) {

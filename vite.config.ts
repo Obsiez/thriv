@@ -9,10 +9,13 @@ function netlifyRedirects() {
     name: 'netlify-redirects',
     closeBundle() {
       const api = process.env.VITE_API_URL?.trim().replace(/\/$/, '')
-      if (!api) return
+      const redirects = [
+        api ? `/api/*  ${api}/api/:splat  200` : '',
+        `/*    /index.html  200`
+      ].filter(Boolean).join('\n') + '\n'
       writeFileSync(
         resolve(__dirname, 'dist', '_redirects'),
-        `/api/*  ${api}/api/:splat  200\n/*    /index.html  200\n`
+        redirects
       )
     },
   }
