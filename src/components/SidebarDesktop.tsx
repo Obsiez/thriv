@@ -75,7 +75,8 @@ export function SidebarDesktop({
       {/* Navigation Links */}
       <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-none">
         {SIDEBAR_TABS.map(({ id, label, icon: Icon }) => {
-          const isActive = activeTab === id
+          // watchlist-tracker is a sub-route of market — highlight market
+          const isActive = activeTab === id || (id === 'market' && activeTab === 'watchlist-tracker')
           return (
             <div key={id} className="relative group">
               <button

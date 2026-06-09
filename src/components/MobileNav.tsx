@@ -21,7 +21,9 @@ const PRIMARY: { id: TabId; label: string; icon: typeof Home }[] = [
   { id: 'portfolio', label: 'Portfolio', icon: Briefcase },
 ]
 
-const PRIMARY_IDS = ['home', 'market', 'trade', 'portfolio']
+// watchlist-tracker is a sub-route of market — treat it as market for nav highlights
+const PRIMARY_IDS = ['home', 'market', 'trade', 'portfolio', 'watchlist-tracker']
+const MARKET_SUBROUTES: TabId[] = ['watchlist-tracker']
 
 export function MobileNav({ activeTab, onTab, onMoreClick, questBadge = 0 }: MobileNavProps) {
   const isMoreActive = !PRIMARY_IDS.includes(activeTab)
@@ -33,7 +35,7 @@ export function MobileNav({ activeTab, onTab, onMoreClick, questBadge = 0 }: Mob
     >
       <div className="grid grid-cols-5 gap-1 w-full">
         {PRIMARY.map(({ id, label, icon: Icon }) => {
-          const active = activeTab === id
+          const active = activeTab === id || (id === 'market' && MARKET_SUBROUTES.includes(activeTab))
           return (
             <button
               key={id}

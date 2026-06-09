@@ -229,7 +229,25 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
 
   // Synchronize browser history navigation (back/forward and swipes) with active tab state
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (e: PopStateEvent) => {
+      // If a modal state is being popped, close the corresponding modal
+      const prevState = e.state
+      if (prevState?.modal === 'settings' || prevState?.modal === 'settings-legal') {
+        // We arrived at a settings or legal state by going back — close legal if open, else close settings
+        // (The actual close is handled below by checking current URL state)
+        return
+      }
+      if (prevState?.modal === 'progression') {
+        return
+      }
+      // Handle modal close: if neither settings nor progression is in the new state, close them
+      if (!prevState?.modal) {
+        setSettingsOpen(false)
+        setLevelProgressionOpen(false)
+      } else if (prevState?.modal === 'settings') {
+        // Going back FROM legal TO settings — settings stays open, legal closes
+        // (legalPage state is managed in SettingsPanel itself via URL now)
+      }
       const path = window.location.pathname
       setTab(getTabFromPath(path))
     }
@@ -245,6 +263,32 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
   const [desktopSidebarExpanded, setDesktopSidebarExpanded] = useState(false)
   const [pwaPrompt, setPwaPrompt] = useState<any>(null)
   const [showPwaBanner, setShowPwaBanner] = useState(false)
+
+  // ── URL-based modal navigation (back gesture / browser back closes modal) ──
+  const openSettings = () => {
+    window.history.pushState({ modal: 'settings' }, '')
+    setSettingsOpen(true)
+  }
+
+  const closeSettings = () => {
+    setSettingsOpen(false)
+    // Only pop if the current state is ours (avoid double-pop)
+    if (window.history.state?.modal === 'settings' || window.history.state?.modal === 'settings-legal') {
+      window.history.back()
+    }
+  }
+
+  const openLevelProgression = () => {
+    window.history.pushState({ modal: 'progression' }, '')
+    setLevelProgressionOpen(true)
+  }
+
+  const closeLevelProgression = () => {
+    setLevelProgressionOpen(false)
+    if (window.history.state?.modal === 'progression') {
+      window.history.back()
+    }
+  }
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -743,7 +787,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
       />
       <SettingsPanel
         open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
+        onClose={closeSettings}
         portfolio={portfolio}
         progress={progress}
         onFullReset={handleFullReset}
@@ -752,7 +796,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
       />
       <LevelProgressionModal
         open={levelProgressionOpen}
-        onClose={() => setLevelProgressionOpen(false)}
+        onClose={closeLevelProgression}
         progress={progress}
       />
 
@@ -794,8 +838,8 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
           progress={progress}
           questBadge={questBadge}
           expanded={desktopSidebarExpanded}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onOpenProgression={() => setLevelProgressionOpen(true)}
+          onOpenSettings={openSettings}
+          onOpenProgression={openLevelProgression}
           onToggleDesktopSidebar={() => setDesktopSidebarExpanded(!desktopSidebarExpanded)}
         />
         
@@ -810,9 +854,9 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
             progress={progress}
             portfolioValue={totalValue}
             portfolioUnderWater={portfolioUnderWater}
-            onOpenProgression={() => setLevelProgressionOpen(true)}
+            onOpenProgression={openLevelProgression}
             onOpenSidebar={() => {}}
-            onOpenSettings={() => setSettingsOpen(true)}
+            onOpenSettings={openSettings}
             displayName={user?.displayName ?? ''}
             guest={guest}
           />
@@ -870,7 +914,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
                 onClaimQuest={claimQuest}
                 onClaimAll={claimAllQuests}
                 marketOpen={marketOpen}
-                onOpenProgression={() => setLevelProgressionOpen(true)}
+                onOpenProgression={openLevelProgression}
               />
             </div>
             <div className="space-y-4">

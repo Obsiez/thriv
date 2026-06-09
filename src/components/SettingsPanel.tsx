@@ -397,6 +397,33 @@ export function SettingsPanel({
   const [message, setMessage] = useState<string | null>(null)
   const [legalPage, setLegalPage] = useState<'terms' | 'privacy' | null>(null)
 
+  // Open a legal sub-page as a history branch of settings
+  const openLegalPage = (page: 'terms' | 'privacy') => {
+    window.history.pushState({ modal: 'settings-legal', page }, '')
+    setLegalPage(page)
+  }
+
+  // Close legal page — pop the history entry we pushed
+  const closeLegalPage = () => {
+    setLegalPage(null)
+    if (window.history.state?.modal === 'settings-legal') {
+      window.history.back()
+    }
+  }
+
+  // Listen for browser back from within the legal sub-page
+  useEffect(() => {
+    if (!open) return
+    const handlePopState = (e: PopStateEvent) => {
+      // If we land back on the settings state, close the legal page
+      if (e.state?.modal === 'settings') {
+        setLegalPage(null)
+      }
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [open])
+
   // 12 Profile-saved Settings States
   const [traderArchetype, setTraderArchetype] = useState<'scalper' | 'day' | 'swing' | 'position'>(
     progress.profile?.traderArchetype ?? DEFAULT_PROFILE.traderArchetype ?? 'day'
@@ -2386,6 +2413,7 @@ export function SettingsPanel({
             )}
 
             {activeCategory === 'legal' && (
+              <>
               <div className="w-full md:grid md:grid-cols-2 md:gap-6 md:items-start space-y-6 md:space-y-0 animate-in fade-in duration-150">
                 <div className="space-y-6">
                   <div className="space-y-4 rounded-xl border border-white/[0.06] bg-surface-800/40 p-4">
@@ -2516,7 +2544,7 @@ export function SettingsPanel({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <button
                         type="button"
-                        onClick={() => setLegalPage('terms')}
+                        onClick={() => openLegalPage('terms')}
                         className="flex flex-col items-center justify-center p-4 rounded-xl border border-white/[0.06] bg-surface-900 hover:border-white/15 transition-all text-slate-300 hover:text-white cursor-pointer"
                       >
                         <Scale className="h-6 w-6 text-slate-500 mb-2" strokeWidth={1.5} />
@@ -2525,7 +2553,7 @@ export function SettingsPanel({
                       </button>
                       <button
                         type="button"
-                        onClick={() => setLegalPage('privacy')}
+                        onClick={() => openLegalPage('privacy')}
                         className="flex flex-col items-center justify-center p-4 rounded-xl border border-white/[0.06] bg-surface-900 hover:border-white/15 transition-all text-slate-300 hover:text-white cursor-pointer"
                       >
                         <Shield className="h-6 w-6 text-slate-500 mb-2" strokeWidth={1.5} />
@@ -2594,6 +2622,14 @@ export function SettingsPanel({
                   </div>
                 </div>
               </div>
+
+              {/* Legal Footer with dynamic copyright year */}
+              <div className="mt-2 pt-4 border-t border-white/[0.04] text-center">
+                <p className="text-[10px] text-slate-600 font-mono">
+                  &copy; {new Date().getFullYear()} Thriv. All rights reserved.
+                </p>
+              </div>
+              </>
             )}
           </div>
         </div>
@@ -2763,7 +2799,7 @@ export function SettingsPanel({
           <div className="flex items-center gap-3 border-b border-white/[0.04] px-5 py-4 shrink-0 bg-[#06080c]/80 backdrop-blur-md">
             <button
               type="button"
-              onClick={() => setLegalPage(null)}
+              onClick={() => closeLegalPage()}
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] text-slate-400 hover:text-white transition-colors touch-manipulation"
               aria-label="Back"
             >
@@ -2938,7 +2974,7 @@ export function SettingsPanel({
             <div className="mx-auto w-full max-w-3xl">
               <button
                 type="button"
-                onClick={() => setLegalPage(null)}
+                onClick={() => closeLegalPage()}
                 className="w-full rounded-xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] hover:text-white py-3 text-xs sm:text-sm font-semibold text-slate-300 transition-colors touch-manipulation min-h-[48px]"
               >
                 Acknowledge and Close
@@ -2957,7 +2993,7 @@ export function SettingsPanel({
           <div className="flex items-center gap-3 border-b border-white/[0.04] px-5 py-4 shrink-0 bg-[#06080c]/80 backdrop-blur-md">
             <button
               type="button"
-              onClick={() => setLegalPage(null)}
+              onClick={() => closeLegalPage()}
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] text-slate-400 hover:text-white transition-colors touch-manipulation"
               aria-label="Back"
             >
@@ -3116,7 +3152,7 @@ export function SettingsPanel({
             <div className="mx-auto w-full max-w-3xl">
               <button
                 type="button"
-                onClick={() => setLegalPage(null)}
+                onClick={() => closeLegalPage()}
                 className="w-full rounded-xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] hover:text-white py-3 text-xs sm:text-sm font-semibold text-slate-300 transition-colors touch-manipulation min-h-[48px]"
               >
                 Acknowledge and Close
