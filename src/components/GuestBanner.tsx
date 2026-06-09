@@ -13,7 +13,7 @@ export function GuestBanner({ onSignUp }: GuestBannerProps) {
   if (dismissed) return null
 
   return (
-    <div className="border-b border-amber-600/20 bg-amber-950/25 px-3 py-2 sm:px-4">
+    <div className="border-b border-amber-600/20 bg-amber-950/25 px-3 py-2 sm:px-4 lg:px-6">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-2 text-xs sm:text-sm">
         <p className="text-amber-200/90">
           <span className="font-medium">Guest session</span>

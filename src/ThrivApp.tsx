@@ -701,8 +701,6 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
       )}
 
 
-      {guest && <GuestBanner onSignUp={() => logout()} />}
-
       <div className="flex flex-1 min-h-0 relative">
         <SidebarDesktop
           activeTab={tab}
@@ -716,6 +714,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
         />
         
         <div className={`flex-1 min-w-0 flex flex-col ${desktopSidebarExpanded ? 'md:pl-[240px]' : 'md:pl-[68px]'}`}>
+          {guest && <GuestBanner onSignUp={() => logout()} />}
           <Header
             onTab={navigate}
             totalValue={totalValue}

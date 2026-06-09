@@ -504,7 +504,7 @@ export function LearnView({ onStartQuest }: LearnViewProps) {
                               value={sim2LimitPrice}
                               onChange={(e) => setSim2LimitPrice(e.target.value)}
                               placeholder="198.50"
-                              className="w-full bg-surface-950 border border-white/[0.06] rounded-md px-2 py-1 text-xs lg:text-sm font-mono text-slate-200 focus:outline-none focus:border-thriv-600"
+                              className="w-full bg-surface-900 border border-white/[0.06] rounded-md px-2 py-1 text-xs lg:text-sm font-mono text-slate-200 focus:outline-none focus:border-thriv-600"
                             />
                           </div>
                         </div>
@@ -1024,7 +1024,7 @@ export function LearnView({ onStartQuest }: LearnViewProps) {
                   placeholder="Search terminology..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-surface-950 border border-white/[0.06] rounded-lg pl-9 pr-3 py-1.5 text-xs lg:text-sm text-slate-200 focus:outline-none focus:border-thriv-600 focus:ring-1 focus:ring-thriv-600/30 min-h-[36px]"
+                  className="w-full bg-surface-900 border border-white/[0.06] rounded-lg pl-9 pr-3 py-1.5 text-xs lg:text-sm text-slate-200 focus:outline-none focus:border-thriv-600 focus:ring-1 focus:ring-thriv-600/30 min-h-[36px]"
                 />
               </div>
               
