@@ -34,6 +34,8 @@ import { WelcomeModal } from './components/WelcomeModal'
 import { GuestBanner } from './components/GuestBanner'
 import { AppFooter } from './components/AppFooter'
 import { LevelProgressionModal } from './components/LevelProgressionModal'
+import { MacroSandboxView } from './components/MacroSandboxView'
+import { OptionsSandboxView } from './components/OptionsSandboxView'
 import { useMarket, type StockSplitEvent } from './hooks/useMarket'
 import { usePortfolio } from './hooks/usePortfolio'
 import { useProgress } from './hooks/useProgress'
@@ -61,6 +63,12 @@ const getTabFromPath = (path: string): TabId => {
   const normalized = path.replace(/^\/|\/$/g, '').toLowerCase()
   if (normalized === 'market/watchlist-tracker') {
     return 'watchlist-tracker'
+  }
+  if (normalized === 'activities/macro-sandbox') {
+    return 'macro-sandbox'
+  }
+  if (normalized === 'activities/options-sandbox') {
+    return 'options-sandbox'
   }
   switch (normalized) {
     case 'market':
@@ -92,6 +100,12 @@ const getTabFromPath = (path: string): TabId => {
 const getPathFromTab = (tabId: TabId): string => {
   if (tabId === 'watchlist-tracker') {
     return '/market/watchlist-tracker'
+  }
+  if (tabId === 'macro-sandbox') {
+    return '/activities/macro-sandbox'
+  }
+  if (tabId === 'options-sandbox') {
+    return '/activities/options-sandbox'
   }
   if (tabId === 'home') {
     return '/'
@@ -217,6 +231,8 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
       'learn',
       'ledger',
       'market/watchlist-tracker',
+      'activities/macro-sandbox',
+      'activities/options-sandbox',
       'home',
       ''
     ]
@@ -1112,6 +1128,20 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
             onPositionSizerUsed={onPositionSizerUsed}
             onFlashQuotesComplete={onFlashQuotesComplete}
             onActivityAnswer={onActivityAnswer}
+            onNavigate={navigate}
+          />
+        )}
+
+        {tab === 'macro-sandbox' && (
+          <MacroSandboxView
+            onBack={() => navigate('activities')}
+            onComplete={onScenarioComplete}
+          />
+        )}
+
+        {tab === 'options-sandbox' && (
+          <OptionsSandboxView
+            onBack={() => navigate('activities')}
           />
         )}
 

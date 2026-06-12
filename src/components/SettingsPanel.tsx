@@ -541,7 +541,14 @@ export function SettingsPanel({
   const [performanceMode, setPerformanceMode] = useState(() => localStorage.getItem('thriv_settings_performance_mode') ?? 'fluid')
   const [devLogsEnabled, setDevLogsEnabled] = useState(() => localStorage.getItem('thriv_settings_dev_logs') === 'false')
 
-  const [certifySimulatorChecked, setCertifySimulatorChecked] = useState(() => localStorage.getItem('thriv_settings_certify_simulator') !== 'false')
+  const [certifySimulatorChecked, setCertifySimulatorChecked] = useState(() => {
+    try {
+      const val = localStorage.getItem('thriv_settings_certify_simulator')
+      return val !== 'false'
+    } catch {
+      return true
+    }
+  })
 
   const toggleLeaderboardPrivacy = () => {
     const next = !leaderboardPrivacy

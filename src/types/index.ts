@@ -92,6 +92,8 @@ export type TabId =
   | 'learn'
   | 'ledger'
   | 'watchlist-tracker'
+  | 'macro-sandbox'
+  | 'options-sandbox'
 
 export interface GlossaryTerm {
   term: string
