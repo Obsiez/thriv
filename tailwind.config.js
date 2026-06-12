@@ -18,7 +18,7 @@ export default {
           950: '#042f28',
         },
         surface: {
-          950: 'rgba(var(--surface-950-rgb, 4, 47, 40), <alpha-value>)',
+          950: 'rgba(var(--surface-950-rgb, 6, 8, 12), <alpha-value>)',
           900: 'rgba(var(--surface-900-rgb, 10, 15, 20), <alpha-value>)',
           800: 'rgba(var(--surface-800-rgb, 17, 25, 33), <alpha-value>)',
           700: 'rgba(var(--surface-700-rgb, 26, 36, 47), <alpha-value>)',
