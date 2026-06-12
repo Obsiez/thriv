@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   AlertTriangle,
   ArrowLeft,
@@ -358,6 +358,7 @@ export function SettingsPanel({
   onProfileChange,
 }: SettingsPanelProps) {
   const { user, mode, logout, updateDisplayName, syncStatus, refreshSync } = useAuth()
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const handleManualSync = async () => {
     if (syncStatus === 'syncing') return
@@ -368,6 +369,13 @@ export function SettingsPanel({
     }
   }
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>('profile')
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0
+    }
+  }, [activeCategory, open])
+
   const [showResetModal, setShowResetModal] = useState(false)
   const [confirmResetType, setConfirmResetType] = useState<'balance' | 'full' | null>(null)
   const [name, setName] = useState(user?.displayName ?? '')
@@ -953,7 +961,7 @@ export function SettingsPanel({
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-thin">
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-thin">
             {activeCategory === 'profile' && (
               <div className="w-full md:grid md:grid-cols-2 md:gap-6 md:items-start space-y-6 md:space-y-0 animate-in fade-in duration-150">
                 <div className="space-y-6">

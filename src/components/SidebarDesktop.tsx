@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Activity,
   BookOpen,
@@ -9,6 +10,8 @@ import {
   ListOrdered,
   Newspaper,
   PanelLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings,
   Sparkles,
 } from 'lucide-react'
@@ -53,6 +56,7 @@ export function SidebarDesktop({
   const accent = getAccent(progress.profile?.accentId ?? 'teal')
   const rank = getLevelInfo(progress.level)
   const bar = xpProgressInLevel(progress.xp)
+  const [hovered, setHovered] = useState(false)
 
   return (
     <aside
@@ -65,10 +69,20 @@ export function SidebarDesktop({
         <button
           type="button"
           onClick={onToggleDesktopSidebar}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
           className="flex h-10 w-10 items-center justify-center text-slate-400 hover:text-white shrink-0 cursor-pointer focus:outline-none rounded-lg hover:bg-surface-800/50 transition-colors"
           aria-label="Toggle sidebar"
         >
-          <PanelLeft className="h-5 w-5" strokeWidth={1.75} />
+          {hovered ? (
+            expanded ? (
+              <PanelLeftClose className="h-5 w-5" strokeWidth={1.75} />
+            ) : (
+              <PanelLeftOpen className="h-5 w-5" strokeWidth={1.75} />
+            )
+          ) : (
+            <PanelLeft className="h-5 w-5" strokeWidth={1.75} />
+          )}
         </button>
       </div>
 

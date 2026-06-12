@@ -673,6 +673,14 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
     saveLastSymbol(symbol)
   }
 
+  // Reset scroll to top instantly on tab changes
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    if (mainRef.current) {
+      mainRef.current.scrollTop = 0
+    }
+  }, [tab])
+
   const updateTabAndHistory = (newTab: TabId, replace = false) => {
     const path = getPathFromTab(newTab)
     if (replace) {
@@ -685,7 +693,6 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
 
   function navigate(t: TabId) {
     updateTabAndHistory(t)
-    mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
     if (t === 'quests') syncQuests()
   }
 
