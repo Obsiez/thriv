@@ -18,11 +18,12 @@ export default {
           950: '#042f28',
         },
         surface: {
-          900: '#0a0f14',
-          800: '#111921',
-          700: '#1a242f',
-          600: '#243040',
-          500: '#2f3d4f',
+          950: 'rgba(var(--surface-950-rgb, 4, 47, 40), <alpha-value>)',
+          900: 'rgba(var(--surface-900-rgb, 10, 15, 20), <alpha-value>)',
+          800: 'rgba(var(--surface-800-rgb, 17, 25, 33), <alpha-value>)',
+          700: 'rgba(var(--surface-700-rgb, 26, 36, 47), <alpha-value>)',
+          600: 'rgba(var(--surface-600-rgb, 36, 48, 64), <alpha-value>)',
+          500: 'rgba(var(--surface-500-rgb, 47, 61, 79), <alpha-value>)',
         },
       },
       fontFamily: {

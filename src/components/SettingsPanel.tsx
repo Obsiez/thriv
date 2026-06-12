@@ -533,7 +533,7 @@ export function SettingsPanel({
   const [performanceMode, setPerformanceMode] = useState(() => localStorage.getItem('thriv_settings_performance_mode') ?? 'fluid')
   const [devLogsEnabled, setDevLogsEnabled] = useState(() => localStorage.getItem('thriv_settings_dev_logs') === 'false')
 
-  const [certifySimulatorChecked, setCertifySimulatorChecked] = useState(() => localStorage.getItem('thriv_settings_certify_simulator') === 'true')
+  const [certifySimulatorChecked, setCertifySimulatorChecked] = useState(() => localStorage.getItem('thriv_settings_certify_simulator') !== 'false')
 
   const toggleLeaderboardPrivacy = () => {
     const next = !leaderboardPrivacy
@@ -896,7 +896,7 @@ export function SettingsPanel({
         onClick={onClose}
       />
       
-      <div className="fixed inset-0 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-[90] w-full h-full md:w-[calc(100%-2rem)] md:max-w-[1002px] md:h-[730px] md:max-h-[85vh] md:rounded-2xl border-0 md:border md:border-white/[0.08] bg-surface-900 shadow-2xl flex flex-col overflow-hidden animate-in fade-in duration-200 md:zoom-in-95">
+      <div className="fixed inset-0 z-[90] w-full h-full flex flex-col overflow-hidden bg-surface-900 animate-slide-in-right md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[calc(100%-2rem)] md:max-w-[1002px] md:h-[730px] md:max-h-[85vh] md:rounded-2xl md:border md:border-white/[0.08] md:shadow-2xl md:animate-none">
         
         <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-4 md:px-5 md:py-4 shrink-0 bg-surface-950/40">
           <div>

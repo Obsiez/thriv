@@ -47,7 +47,7 @@ export function MobileNav({ activeTab, onTab, onMoreClick, questBadge = 0 }: Mob
                   : 'text-slate-500 hover:text-slate-350 active:text-slate-300'
               }`}
             >
-              <Icon className="h-4 w-4" strokeWidth={active ? 2 : 1.75} />
+              <Icon className="h-[17px] w-[17px]" strokeWidth={active ? 2 : 1.75} />
               <span className="text-[9px] mt-0.5 scale-95 tracking-tight font-medium leading-none">{label}</span>
             </button>
           )
@@ -63,7 +63,7 @@ export function MobileNav({ activeTab, onTab, onMoreClick, questBadge = 0 }: Mob
               : 'text-slate-500 hover:text-slate-350 active:text-slate-300'
           }`}
         >
-          <MoreHorizontal className="h-4 w-4" strokeWidth={isMoreActive ? 2 : 1.75} />
+          <MoreHorizontal className="h-[17px] w-[17px]" strokeWidth={isMoreActive ? 2 : 1.75} />
           <span className="text-[9px] mt-0.5 scale-95 tracking-tight font-medium leading-none">More</span>
           {questBadge > 0 && (
             <span className="absolute top-1.5 right-3 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-amber-500 px-0.5 text-[8px] font-bold text-surface-900 shadow-sm pulse-rewards">

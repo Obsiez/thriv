@@ -28,6 +28,7 @@ import { Leaderboard } from './components/Leaderboard'
 import { PriceAlerts } from './components/PriceAlerts'
 import { SettingsPanel } from './components/SettingsPanel'
 import { SidebarDesktop } from './components/SidebarDesktop'
+import { ShareStatsModal } from './components/ShareStatsModal'
 import { LedgerView } from './components/ProfilePanel'
 import { WelcomeModal } from './components/WelcomeModal'
 import { GuestBanner } from './components/GuestBanner'
@@ -149,6 +150,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
   )
 
   const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [macroCount, setMacroCount] = useState(0)
   const [speedMultiplier, setSpeedMultiplier] = useState(1)
   const setProgressRef = useRef<React.Dispatch<React.SetStateAction<PlayerProgress>> | null>(null)
@@ -376,6 +378,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
   })
 
   setProgressRef.current = setProgress
+
 
   const questBadge = useMemo(
     () =>
@@ -1118,6 +1121,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
             totalValue={totalValue}
             stocks={stocks}
             onProfileChange={(profile) => setProgress((p) => ({ ...p, profile }))}
+            onOpenShareStats={() => setIsShareModalOpen(true)}
           />
         )}
 
@@ -1164,6 +1168,12 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
         onClose={() => setMoreMenuOpen(false)}
         onTab={navigate}
         questBadge={questBadge}
+      />
+      <ShareStatsModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        progress={progress}
+        totalValue={totalValue}
       />
     </div>
   )

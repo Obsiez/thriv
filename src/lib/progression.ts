@@ -12,15 +12,15 @@ export interface LevelInfo {
 // Cumulative XP thresholds to unlock each level (Level 1 starts at 0 XP)
 export const LEVEL_THRESHOLDS = [
   0,       // Level 1
-  400,     // Level 2 (requires 400 XP total)
-  1000,    // Level 3 (requires 1,000 XP total)
-  2000,    // Level 4 (requires 2,000 XP total)
-  3500,    // Level 5 (requires 3,500 XP total)
-  5500,    // Level 6 (requires 5,500 XP total)
-  8000,    // Level 7 (requires 8,000 XP total)
-  11000,   // Level 8 (requires 11,000 XP total)
-  14500,   // Level 9 (requires 14,500 XP total)
-  19000,   // Level 10 (requires 19,000 XP total)
+  300,     // Level 2 (requires 300 XP total)
+  800,     // Level 3 (requires 800 XP total)
+  1500,    // Level 4 (requires 1,500 XP total)
+  2500,    // Level 5 (requires 2,500 XP total)
+  4000,    // Level 6 (requires 4,000 XP total)
+  6000,    // Level 7 (requires 6,000 XP total)
+  8500,    // Level 8 (requires 8,500 XP total)
+  11500,   // Level 9 (requires 11,500 XP total)
+  15000,   // Level 10 (requires 15,000 XP total)
 ]
 
 const TITLES: { title: string; rankCode: string; tier: RankTier; tierLabel: string }[] = [

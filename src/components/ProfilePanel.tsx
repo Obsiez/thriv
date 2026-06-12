@@ -7,6 +7,7 @@ import {
   Coins,
   ChevronLeft,
   ChevronRight,
+  Share2,
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { formatCurrency } from '../lib/marketEngine'
@@ -20,6 +21,7 @@ interface LedgerViewProps {
   totalValue: number
   stocks: Stock[]
   onProfileChange: (profile: ProfilePrefs) => void
+  onOpenShareStats: () => void
 }
 
 // Card tier metadata structure
@@ -187,6 +189,7 @@ export function LedgerView({
   totalValue,
   stocks,
   onProfileChange,
+  onOpenShareStats,
 }: LedgerViewProps) {
   const { user } = useAuth()
   const [activeCardIndex, setActiveCardIndex] = useState(() => {
@@ -546,9 +549,19 @@ export function LedgerView({
               </div>
             </div>
 
-            <div className="text-right shrink-0 font-mono text-[9px] text-slate-500 space-y-0.5 hidden xs:block relative z-10 pr-1">
-              <p className="text-slate-300 font-bold tracking-tight">{progress.xp.toLocaleString()} XP</p>
-              <p className="opacity-80">{progress.stats.totalTrades} trade(s)</p>
+            <div className="text-right shrink-0 flex flex-col items-end gap-1.5 relative z-10 pr-1">
+              <div className="font-mono text-[9px] text-slate-500 space-y-0.5">
+                <p className="text-slate-300 font-bold tracking-tight">{progress.xp.toLocaleString()} XP</p>
+                <p className="opacity-80">{progress.stats.totalTrades} trade(s)</p>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenShareStats}
+                className="flex items-center gap-1 px-2 py-0.5 bg-thriv-500/10 hover:bg-thriv-500/20 active:scale-95 text-thriv-400 border border-thriv-500/20 rounded-md cursor-pointer transition-all text-[9px] font-semibold"
+              >
+                <Share2 className="h-2.5 w-2.5" />
+                <span>Share</span>
+              </button>
             </div>
           </div>
 

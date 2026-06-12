@@ -272,3 +272,36 @@
   }
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   Theme System Configuration & Light Mode Overrides
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --surface-950-rgb: 4, 47, 40;
+  --surface-900-rgb: 10, 15, 20;
+  --surface-800-rgb: 17, 25, 33;
+  --surface-700-rgb: 26, 36, 47;
+  --surface-600-rgb: 36, 48, 64;
+  --surface-500-rgb: 47, 61, 79;
+}
+
+
+
+/* Slide-in settings animation for mobile */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInFromRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
+
+
+
