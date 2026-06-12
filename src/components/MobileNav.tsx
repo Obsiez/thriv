@@ -22,8 +22,8 @@ const PRIMARY: { id: TabId; label: string; icon: typeof Home }[] = [
 ]
 
 // watchlist-tracker is a sub-route of market — treat it as market for nav highlights
-const PRIMARY_IDS = ['home', 'market', 'trade', 'portfolio', 'watchlist-tracker']
-const MARKET_SUBROUTES: TabId[] = ['watchlist-tracker']
+const PRIMARY_IDS = ['home', 'market', 'trade', 'portfolio', 'watchlist-tracker', 'macro-sandbox', 'options-sandbox']
+const MARKET_SUBROUTES: TabId[] = ['watchlist-tracker', 'macro-sandbox', 'options-sandbox']
 
 export function MobileNav({ activeTab, onTab, onMoreClick, questBadge = 0 }: MobileNavProps) {
   const isMoreActive = !PRIMARY_IDS.includes(activeTab)
@@ -41,7 +41,7 @@ export function MobileNav({ activeTab, onTab, onMoreClick, questBadge = 0 }: Mob
               key={id}
               type="button"
               onClick={() => onTab(id)}
-              className={`relative flex flex-col items-center justify-center py-3 rounded-full transition-colors cursor-pointer touch-manipulation ${
+              className={`relative flex flex-col items-center justify-center py-[11px] rounded-full transition-colors cursor-pointer touch-manipulation ${
                 active
                   ? 'bg-surface-800 text-thriv-400 font-semibold shadow-sm'
                   : 'text-slate-500 hover:text-slate-350 active:text-slate-300'
@@ -57,7 +57,7 @@ export function MobileNav({ activeTab, onTab, onMoreClick, questBadge = 0 }: Mob
         <button
           type="button"
           onClick={onMoreClick}
-          className={`relative flex flex-col items-center justify-center py-3 rounded-full transition-colors cursor-pointer touch-manipulation ${
+          className={`relative flex flex-col items-center justify-center py-[11px] rounded-full transition-colors cursor-pointer touch-manipulation ${
             isMoreActive
               ? 'bg-surface-800 text-thriv-400 font-semibold shadow-sm'
               : 'text-slate-500 hover:text-slate-350 active:text-slate-300'

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Bell, Search, Download } from 'lucide-react'
+import { Bell, Search, Download, Globe, Layers } from 'lucide-react'
 import { Header } from './components/Header'
 import { TickerBar } from './components/TickerBar'
 import { MarketIndices } from './components/MarketIndices'
@@ -64,10 +64,10 @@ const getTabFromPath = (path: string): TabId => {
   if (normalized === 'market/watchlist-tracker') {
     return 'watchlist-tracker'
   }
-  if (normalized === 'activities/macro-sandbox') {
+  if (normalized === 'market/macro-sandbox') {
     return 'macro-sandbox'
   }
-  if (normalized === 'activities/options-sandbox') {
+  if (normalized === 'market/options-sandbox') {
     return 'options-sandbox'
   }
   switch (normalized) {
@@ -102,10 +102,10 @@ const getPathFromTab = (tabId: TabId): string => {
     return '/market/watchlist-tracker'
   }
   if (tabId === 'macro-sandbox') {
-    return '/activities/macro-sandbox'
+    return '/market/macro-sandbox'
   }
   if (tabId === 'options-sandbox') {
-    return '/activities/options-sandbox'
+    return '/market/options-sandbox'
   }
   if (tabId === 'home') {
     return '/'
@@ -231,8 +231,8 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
       'learn',
       'ledger',
       'market/watchlist-tracker',
-      'activities/macro-sandbox',
-      'activities/options-sandbox',
+      'market/macro-sandbox',
+      'market/options-sandbox',
       'home',
       ''
     ]
@@ -676,6 +676,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
 
   const triggeredAlerts = portfolio.alerts.filter((a) => a.triggered)
   const prevAlertCountRef = useRef(0)
+  const skipScrollResetRef = useRef(false)
 
   useEffect(() => {
     const n = triggeredAlerts.length
@@ -691,9 +692,13 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
 
   // Reset scroll to top instantly on tab changes
   useEffect(() => {
-    window.scrollTo(0, 0)
-    if (mainRef.current) {
-      mainRef.current.scrollTop = 0
+    if (skipScrollResetRef.current) {
+      skipScrollResetRef.current = false
+    } else {
+      window.scrollTo(0, 0)
+      if (mainRef.current) {
+        mainRef.current.scrollTop = 0
+      }
     }
   }, [tab])
 
@@ -707,7 +712,8 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
     setTab(newTab)
   }
 
-  function navigate(t: TabId) {
+  function navigate(t: TabId, preserveScroll = false) {
+    skipScrollResetRef.current = preserveScroll
     updateTabAndHistory(t)
     if (t === 'quests') syncQuests()
   }
@@ -1007,6 +1013,29 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
                   onToggleWatch={handleWatch}
                   filter={search}
                 />
+                
+                {/* Mobile Sandboxes card (rendered below table on mobile) */}
+                <div className="block lg:hidden rounded-xl border border-white/[0.06] bg-surface-900/60 p-4 space-y-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-display">Market Sandboxes</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate('macro-sandbox')}
+                      className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/5 bg-surface-850 hover:bg-surface-800 hover:border-white/10 transition-all text-slate-300 hover:text-white cursor-pointer min-h-[72px]"
+                    >
+                      <Globe className="h-5 w-5 text-emerald-400 mb-1" />
+                      <span className="text-xs font-medium">Macro Sandbox</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate('options-sandbox')}
+                      className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/5 bg-surface-850 hover:bg-surface-800 hover:border-white/10 transition-all text-slate-300 hover:text-white cursor-pointer min-h-[72px]"
+                    >
+                      <Layers className="h-5 w-5 text-indigo-400 mb-1" />
+                      <span className="text-xs font-medium">Options Sandbox</span>
+                    </button>
+                  </div>
+                </div>
               </div>
               <div className="space-y-4">
                 {selectedStock && <StockDetail stock={selectedStock} />}
@@ -1016,6 +1045,29 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
                   onAdd={addAlert}
                   onRemove={removeAlert}
                 />
+                
+                {/* Desktop Sandboxes card (rendered in sidebar on desktop) */}
+                <div className="hidden lg:block rounded-xl border border-white/[0.06] bg-surface-900/60 p-4 space-y-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-display">Market Sandboxes</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate('macro-sandbox')}
+                      className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/5 bg-surface-850 hover:bg-surface-800 hover:border-white/10 transition-all text-slate-300 hover:text-white cursor-pointer min-h-[72px]"
+                    >
+                      <Globe className="h-5 w-5 text-emerald-400 mb-1" />
+                      <span className="text-xs font-medium">Macro Sandbox</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate('options-sandbox')}
+                      className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/5 bg-surface-850 hover:bg-surface-800 hover:border-white/10 transition-all text-slate-300 hover:text-white cursor-pointer min-h-[72px]"
+                    >
+                      <Layers className="h-5 w-5 text-indigo-400 mb-1" />
+                      <span className="text-xs font-medium">Options Sandbox</span>
+                    </button>
+                  </div>
+                </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-semibold text-slate-400">Watchlist</h3>
@@ -1128,20 +1180,19 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
             onPositionSizerUsed={onPositionSizerUsed}
             onFlashQuotesComplete={onFlashQuotesComplete}
             onActivityAnswer={onActivityAnswer}
-            onNavigate={navigate}
           />
         )}
 
         {tab === 'macro-sandbox' && (
           <MacroSandboxView
-            onBack={() => navigate('activities')}
+            onBack={() => navigate('market', true)}
             onComplete={onScenarioComplete}
           />
         )}
 
         {tab === 'options-sandbox' && (
           <OptionsSandboxView
-            onBack={() => navigate('activities')}
+            onBack={() => navigate('market', true)}
           />
         )}
 
@@ -1174,7 +1225,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
               selectSymbol(symbol)
               navigate('market')
             }}
-            onNavigate={navigate}
+            onNavigate={(newTab) => navigate(newTab, newTab === 'market')}
             pushNotificationsEnabled={progress.profile?.pushNotificationsEnabled ?? false}
             onToggleNotifications={(enabled) => {
               setProgress((prev) => ({

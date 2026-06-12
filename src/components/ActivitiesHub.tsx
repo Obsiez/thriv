@@ -11,8 +11,6 @@ import {
   Target,
   AlertTriangle,
   Zap,
-  Globe,
-  Layers,
 } from 'lucide-react'
 import { FlashQuotesActivity } from './FlashQuotesActivity'
 import { QuizActivity } from './QuizActivity'
@@ -25,7 +23,7 @@ import { OrderBookCombatActivity } from './OrderBookCombatActivity'
 import { BidAskSniperActivity } from './BidAskSniperActivity'
 import { MarginCallSurvivorActivity } from './MarginCallSurvivorActivity'
 import { OptionsExpiryActivity } from './OptionsExpiryActivity'
-import type { Stock, TabId } from '../types'
+import type { Stock } from '../types'
 
 type ActivityId =
   | 'menu'
@@ -55,7 +53,6 @@ interface ActivitiesHubProps {
   onFlashQuotesComplete: (correct: number, total: number) => void
   onQuizCorrectAnswer?: () => void
   onActivityAnswer: (correct: boolean) => void
-  onNavigate: (tab: TabId) => void
 }
 
 export function ActivitiesHub({
@@ -71,7 +68,6 @@ export function ActivitiesHub({
   onFlashQuotesComplete,
   onQuizCorrectAnswer,
   onActivityAnswer,
-  onNavigate,
 }: ActivitiesHubProps) {
   const [view, setView] = useState<ActivityId>('menu')
   const stock = stocks.find((s) => s.symbol === selectedSymbol) ?? stocks[0]
@@ -328,22 +324,6 @@ export function ActivitiesHub({
       xp: 'Mission credit',
       color: 'border-slate-500/25',
     },
-    {
-      id: 'macro-sandbox' as any,
-      title: 'Macroeconomic Sandbox',
-      desc: ' Federal Funds Rate, GDP, CPI, and Unemployment sliders with sector heatmap impact and central bank challenges',
-      icon: Globe,
-      xp: 'Scenario reward: 40 XP',
-      color: 'border-emerald-600/25',
-    },
-    {
-      id: 'options-sandbox' as any,
-      title: 'Options Sandbox & Greeks',
-      desc: 'Interactive multi-leg payoff diagrams (2D/3D), Greeks visualizer, and risk simulator',
-      icon: Layers,
-      xp: 'Interactive Tool',
-      color: 'border-indigo-600/25',
-    },
   ]
 
   return (
@@ -359,13 +339,7 @@ export function ActivitiesHub({
           <button
             key={id}
             type="button"
-            onClick={() => {
-              if (id === 'macro-sandbox' || id === 'options-sandbox') {
-                onNavigate(id)
-              } else {
-                setView(id)
-              }
-            }}
+            onClick={() => setView(id)}
             className={`glass flex min-h-[96px] items-center gap-4 rounded-xl border p-4 text-left touch-manipulation transition-colors hover:border-white/10 ${color}`}
           >
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-surface-900/80">

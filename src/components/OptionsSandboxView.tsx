@@ -242,9 +242,9 @@ export function OptionsSandboxView({ onBack }: OptionsSandboxViewProps) {
   // Payoff chart generation
   const payoffData = useMemo(() => {
     const data = []
-    const entryVal = strategy === 'condor' ? bsCalc.entryPrice : bsCalc.entryPrice
-    // S range: $50 to $150
-    for (let S_axis = 50; S_axis <= 150; S_axis += 2) {
+    const entryVal = bsCalc.entryPrice
+    // S range: $50 to $150, step 0.5 for a smooth, premium payoff curve (200 data points)
+    for (let S_axis = 50; S_axis <= 150; S_axis += 0.5) {
       let expProfit = 0
       let todayProfit = 0
       
@@ -270,7 +270,7 @@ export function OptionsSandboxView({ onBack }: OptionsSandboxViewProps) {
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Top Bar Navigation */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.06] pb-3 gap-3">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -290,14 +290,14 @@ export function OptionsSandboxView({ onBack }: OptionsSandboxViewProps) {
         </div>
 
         {/* Strategy Selector Tabs */}
-        <div className="flex gap-1 bg-surface-950/40 p-1 rounded-xl border border-white/[0.04] text-[11px] font-medium max-w-lg overflow-x-auto scrollbar-none">
+        <div className="grid grid-cols-3 sm:flex gap-1 bg-surface-950/40 p-1 rounded-xl border border-white/[0.04] text-[11px] font-medium w-full sm:w-auto">
           {strategies.map((s) => (
             <button
               key={s.id}
               onClick={() => setStrategy(s.id as StrategyId)}
-              className={`px-3 py-1.5 rounded-lg transition-all shrink-0 cursor-pointer ${
+              className={`px-3 py-2 sm:py-1.5 rounded-lg transition-all shrink-0 cursor-pointer text-center flex items-center justify-center ${
                 strategy === s.id
-                  ? 'bg-thriv-600 text-white font-semibold shadow-md'
+                  ? 'bg-thriv-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -308,9 +308,10 @@ export function OptionsSandboxView({ onBack }: OptionsSandboxViewProps) {
       </div>
 
       {/* Main Workspace */}
-      <div className="grid gap-6 md:grid-cols-12 items-start">
+      <div className="flex flex-col md:grid md:grid-cols-12 gap-6 items-start">
         {/* Left column: Controls (5 cols) */}
-        <div className="md:col-span-5 space-y-5">
+        <div className="md:col-span-5 space-y-5 order-2 md:order-1 w-full">
+
           {/* Sliders Container */}
           <div className="rounded-xl border border-white/[0.06] bg-surface-900/60 p-5 space-y-4">
             <h2 className="font-display font-semibold text-sm text-white flex items-center gap-2">
@@ -498,11 +499,16 @@ export function OptionsSandboxView({ onBack }: OptionsSandboxViewProps) {
                 </div>
               )}
             </div>
+
+            {/* Small educational card below options parameter controls */}
+            <div className="p-2.5 bg-surface-950/40 rounded-lg text-[10px] text-slate-500 leading-normal border border-white/[0.02]">
+              Simulate options payoff and Greeks by adjusting stock price, volatility, and expiration. Higher implied volatility (IV) increases option premiums; decreasing DTE accelerates time decay (Theta).
+            </div>
           </div>
         </div>
 
         {/* Right Column: Payoff Chart & Greeks (7 cols) */}
-        <div className="md:col-span-7 space-y-5">
+        <div className="md:col-span-7 space-y-5 order-1 md:order-2 w-full">
           {/* SVG Payoff Chart */}
           <div className="rounded-xl border border-white/[0.06] bg-surface-900/60 p-5 space-y-4">
             <div className="flex justify-between items-center">
@@ -518,7 +524,12 @@ export function OptionsSandboxView({ onBack }: OptionsSandboxViewProps) {
             </div>
 
             {/* SVG Plot */}
-            <div className="h-56 w-full relative">
+            <div className="h-36 sm:h-44 w-full relative">
+              {/* Unwarped HTML Text Overlays */}
+              <div className="absolute top-1 left-2 font-mono text-[9px] sm:text-xs text-slate-500 z-10 pointer-events-none">+$400</div>
+              <div className="absolute bottom-1 left-2 font-mono text-[9px] sm:text-xs text-slate-500 z-10 pointer-events-none">-$400</div>
+              <div className="absolute bottom-1 right-2 font-mono text-[9px] sm:text-xs text-slate-500 z-10 pointer-events-none">STOCK RANGE: $50 to $150</div>
+
               <svg className="h-full w-full overflow-visible" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="payoff-green" x1="0" y1="0" x2="0" y2="1">
@@ -563,7 +574,7 @@ export function OptionsSandboxView({ onBack }: OptionsSandboxViewProps) {
                 {/* Payoff paths mapping */}
                 {(() => {
                   const widthVal = 1000
-                  const heightVal = 224 // h-56 is 224px
+                  const heightVal = 224 // viewBox base height
                   const halfH = heightVal / 2
 
                   // We scale y profits. The max potential profit display range: e.g. -$400 to +$400
@@ -596,6 +607,9 @@ export function OptionsSandboxView({ onBack }: OptionsSandboxViewProps) {
                         stroke="rgba(255,255,255,0.4)"
                         strokeWidth={2}
                         strokeDasharray="4 4"
+                        vectorEffect="non-scaling-stroke"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       />
                       {/* T+0 BS curve line */}
                       <path
@@ -604,13 +618,10 @@ export function OptionsSandboxView({ onBack }: OptionsSandboxViewProps) {
                         stroke="#14b896"
                         strokeWidth={2.2}
                         className="transition-all duration-150"
+                        vectorEffect="non-scaling-stroke"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       />
-                      {/* Legend details */}
-                      <g className="font-mono text-[9px] fill-slate-500">
-                        <text x={10} y={15} textAnchor="start">+$400</text>
-                        <text x={10} y={heightVal - 10} textAnchor="start">-$400</text>
-                        <text x={widthVal - 10} y={halfH + 12} textAnchor="end">STOCK RANGE: $50 to $150</text>
-                      </g>
                     </svg>
                   )
                 })()}
