@@ -313,7 +313,7 @@ export function OptionsSandboxView({ onBack }: OptionsSandboxViewProps) {
         <div className="md:col-span-5 space-y-5 order-2 md:order-1 w-full">
 
           {/* Sliders Container */}
-          <div className="rounded-xl border border-white/[0.06] bg-surface-900/60 p-5 space-y-4">
+          <div className="glass rounded-xl p-5 space-y-4">
             <h2 className="font-display font-semibold text-sm text-white flex items-center gap-2">
               <Sliders className="h-4 w-4 text-slate-400" />
               Option Parameter Controls
@@ -510,7 +510,7 @@ export function OptionsSandboxView({ onBack }: OptionsSandboxViewProps) {
         {/* Right Column: Payoff Chart & Greeks (7 cols) */}
         <div className="md:col-span-7 space-y-5 order-1 md:order-2 w-full">
           {/* SVG Payoff Chart */}
-          <div className="rounded-xl border border-white/[0.06] bg-surface-900/60 p-5 space-y-4">
+          <div className="glass rounded-xl p-5 space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="font-display font-semibold text-sm text-white">Interactive Payoff Diagram</h2>
               <div className="flex items-center gap-3 text-[10px] font-mono">
@@ -632,7 +632,7 @@ export function OptionsSandboxView({ onBack }: OptionsSandboxViewProps) {
           {/* Greeks and Risk summary Row */}
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Risk profile card */}
-            <div className="rounded-xl border border-white/[0.06] bg-surface-900/60 p-5 space-y-3">
+            <div className="glass rounded-xl p-5 space-y-3">
               <h3 className="font-display font-semibold text-xs text-white uppercase tracking-wider">Risk Profile</h3>
               
               <div className="space-y-2 font-sans text-xs">
@@ -665,7 +665,7 @@ export function OptionsSandboxView({ onBack }: OptionsSandboxViewProps) {
             </div>
 
             {/* Greeks Panel */}
-            <div className="rounded-xl border border-white/[0.06] bg-surface-900/60 p-5 space-y-3">
+            <div className="glass rounded-xl p-5 space-y-3">
               <h3 className="font-display font-semibold text-xs text-white uppercase tracking-wider flex items-center gap-1.5">
                 <Calculator className="h-3.5 w-3.5 text-slate-500" />
                 Leg Options Greeks (Aggregate)

@@ -277,7 +277,7 @@ export function MacroSandboxView({ onBack, onComplete }: MacroSandboxViewProps) 
       <div className="grid gap-5 md:grid-cols-12 items-start order-3 lg:order-1">
         {/* Column 1: Variables controls */}
         <div className="md:col-span-5 space-y-4">
-          <div className="rounded-xl border border-white/[0.06] bg-surface-900/60 p-4 space-y-3.5">
+          <div className="glass rounded-xl p-4 space-y-3.5">
             <h2 className="font-display font-semibold text-xs text-white uppercase tracking-wider flex items-center gap-2">
               <Sliders className="h-4 w-4 text-slate-400" />
               Monetary Policy Controls
@@ -382,7 +382,7 @@ export function MacroSandboxView({ onBack, onComplete }: MacroSandboxViewProps) 
 
         {/* Column 2: Scenario description */}
         <div className="md:col-span-7 space-y-4">
-          <div className="rounded-xl border border-white/[0.06] bg-surface-900/60 p-4 space-y-3">
+          <div className="glass rounded-xl p-4 space-y-3">
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="font-display font-semibold text-xs text-white uppercase tracking-wider">
@@ -477,22 +477,25 @@ export function MacroSandboxView({ onBack, onComplete }: MacroSandboxViewProps) 
         <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-4">
           {sectors.map((s) => {
             const val = s.value
-            let colorClass = 'border-white/[0.06] bg-surface-900/30 text-slate-400'
-            let bgOverlay = 'bg-slate-500/5'
+            let borderClass = 'border-white/[0.06]'
+            let textClass = 'text-slate-400'
+            let bgOverlay = 'bg-slate-500/[0.02]'
             if (val > 1.5) {
-              colorClass = 'border-emerald-500/20 bg-emerald-950/5 text-emerald-400'
-              bgOverlay = 'bg-emerald-500/5'
+              borderClass = 'border-emerald-500/25'
+              textClass = 'text-emerald-400'
+              bgOverlay = 'bg-emerald-500/[0.06]'
             } else if (val < -1.5) {
-              colorClass = 'border-rose-500/20 bg-rose-950/5 text-rose-400'
-              bgOverlay = 'bg-rose-500/5'
+              borderClass = 'border-rose-500/25'
+              textClass = 'text-rose-400'
+              bgOverlay = 'bg-rose-500/[0.06]'
             }
 
             return (
               <div
                 key={s.name}
-                className={`rounded-xl border p-3 sm:p-4 relative overflow-hidden transition-all duration-200 hover:border-white/10 ${colorClass}`}
+                className={`glass rounded-xl p-3 sm:p-4 relative overflow-hidden transition-all duration-200 hover:border-white/10 ${borderClass} ${textClass}`}
               >
-                <div className={`absolute inset-0 opacity-10 ${bgOverlay}`} />
+                <div className={`absolute inset-0 ${bgOverlay}`} />
                 <div className="relative">
                   <div className="flex justify-between items-start">
                     <span className="font-display font-semibold text-[11px] sm:text-xs text-white truncate max-w-[70%]">{s.name}</span>
@@ -502,7 +505,7 @@ export function MacroSandboxView({ onBack, onComplete }: MacroSandboxViewProps) 
                     </span>
                   </div>
                   <p className="text-[10px] text-slate-400 leading-tight mt-1.5 line-clamp-3 sm:line-clamp-2">
-                    {s.desc}
+                     {s.desc}
                   </p>
                 </div>
               </div>
@@ -512,7 +515,7 @@ export function MacroSandboxView({ onBack, onComplete }: MacroSandboxViewProps) 
       </div>
 
       {/* Bottom Row: Market Index Simulation Chart */}
-      <div className="rounded-xl border border-white/[0.06] bg-surface-900/60 p-4 space-y-3 order-1 lg:order-3">
+      <div className="glass rounded-xl p-4 space-y-3 order-1 lg:order-3">
         <div>
           <h2 className="font-display font-semibold text-xs text-white uppercase tracking-wider flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-slate-400" strokeWidth={1.75} />

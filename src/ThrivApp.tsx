@@ -1015,13 +1015,13 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
                 />
                 
                 {/* Mobile Sandboxes card (rendered below table on mobile) */}
-                <div className="block lg:hidden rounded-xl border border-white/[0.06] bg-surface-900/60 p-4 space-y-3">
+                <div className="block lg:hidden glass rounded-xl p-4 space-y-3">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-display">Market Sandboxes</h3>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => navigate('macro-sandbox')}
-                      className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/5 bg-surface-850 hover:bg-surface-800 hover:border-white/10 transition-all text-slate-300 hover:text-white cursor-pointer min-h-[72px]"
+                      className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/5 bg-surface-950 hover:bg-surface-900 hover:border-white/10 transition-all text-slate-300 hover:text-white cursor-pointer min-h-[72px]"
                     >
                       <Globe className="h-5 w-5 text-emerald-400 mb-1" />
                       <span className="text-xs font-medium">Macro Sandbox</span>
@@ -1029,7 +1029,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
                     <button
                       type="button"
                       onClick={() => navigate('options-sandbox')}
-                      className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/5 bg-surface-850 hover:bg-surface-800 hover:border-white/10 transition-all text-slate-300 hover:text-white cursor-pointer min-h-[72px]"
+                      className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/5 bg-surface-950 hover:bg-surface-900 hover:border-white/10 transition-all text-slate-300 hover:text-white cursor-pointer min-h-[72px]"
                     >
                       <Layers className="h-5 w-5 text-indigo-400 mb-1" />
                       <span className="text-xs font-medium">Options Sandbox</span>
@@ -1047,13 +1047,13 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
                 />
                 
                 {/* Desktop Sandboxes card (rendered in sidebar on desktop) */}
-                <div className="hidden lg:block rounded-xl border border-white/[0.06] bg-surface-900/60 p-4 space-y-3">
+                <div className="hidden lg:block glass rounded-xl p-4 space-y-3">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-display">Market Sandboxes</h3>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => navigate('macro-sandbox')}
-                      className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/5 bg-surface-850 hover:bg-surface-800 hover:border-white/10 transition-all text-slate-300 hover:text-white cursor-pointer min-h-[72px]"
+                      className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/5 bg-surface-950 hover:bg-surface-900 hover:border-white/10 transition-all text-slate-300 hover:text-white cursor-pointer min-h-[72px]"
                     >
                       <Globe className="h-5 w-5 text-emerald-400 mb-1" />
                       <span className="text-xs font-medium">Macro Sandbox</span>
@@ -1061,7 +1061,7 @@ export default function ThrivApp({ sessionKey }: ThrivAppProps) {
                     <button
                       type="button"
                       onClick={() => navigate('options-sandbox')}
-                      className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/5 bg-surface-850 hover:bg-surface-800 hover:border-white/10 transition-all text-slate-300 hover:text-white cursor-pointer min-h-[72px]"
+                      className="flex flex-col items-center justify-center p-3 rounded-lg border border-white/5 bg-surface-950 hover:bg-surface-900 hover:border-white/10 transition-all text-slate-300 hover:text-white cursor-pointer min-h-[72px]"
                     >
                       <Layers className="h-5 w-5 text-indigo-400 mb-1" />
                       <span className="text-xs font-medium">Options Sandbox</span>
